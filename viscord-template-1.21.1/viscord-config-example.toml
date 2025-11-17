@@ -1,0 +1,258 @@
+# ============================================
+# Viscord Configuration Example
+# ============================================
+# This is an example configuration file for Viscord.
+# Copy the relevant settings to your config/viscord-common.toml file.
+# The actual config file will be auto-generated when you first run the mod.
+
+# ============================================
+# DISCORD BOT SETTINGS (REQUIRED)
+# ============================================
+
+# Your Discord Bot Token
+# Get this from: https://discord.com/developers/applications
+# 1. Create a new application
+# 2. Go to "Bot" section
+# 3. Click "Reset Token" and copy it
+# KEEP THIS SECRET! Never share your bot token.
+discordBotToken = "YOUR_BOT_TOKEN_HERE"
+
+# Discord Channel ID where messages will be sent/received
+# How to get: Enable Developer Mode in Discord (Settings > Advanced > Developer Mode)
+# Then right-click your channel and select "Copy Channel ID"
+discordChannelId = "YOUR_CHANNEL_ID_HERE"
+
+# Discord Webhook URL for sending messages from Minecraft to Discord
+# How to get: Right-click your channel > Edit Channel > Integrations > Webhooks > New Webhook
+# Then click "Copy Webhook URL"
+discordWebhookUrl = "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL"
+
+# ============================================
+# SERVER IDENTITY SETTINGS
+# ============================================
+
+# Server prefix for webhook messages
+# This appears before player names in Discord
+# Examples: [BMC], [Survival], [Creative], [Lobby], [SMP]
+# IMPORTANT: Each server sharing a Discord channel MUST have a unique prefix!
+serverPrefix = "[BMC]"
+
+# Server name to identify this server in join/leave/death messages
+# This is used in system messages like "Player joined Server Name"
+serverName = "Minecraft Server"
+
+# ============================================
+# MESSAGE FORMAT SETTINGS
+# ============================================
+
+# Format for messages sent from Minecraft to Discord
+# Placeholders:
+#   {prefix}   - Server prefix (e.g., [BMC])
+#   {username} - Player username
+#   {message}  - Chat message content
+# Examples:
+#   "**{prefix}{username}**: {message}"           -> **[BMC]Steve**: Hello!
+#   "{prefix} **{username}** - {message}"         -> [BMC] **Steve** - Hello!
+#   "**{username}** ({prefix}): {message}"        -> **Steve** ([BMC]): Hello!
+minecraftToDiscordFormat = "**{prefix}{username}**: {message}"
+
+# Format for messages sent from Discord to Minecraft
+# Placeholders:
+#   {username} - Discord username (or webhook name for other servers)
+#   {message}  - Message content
+# Color codes (use § followed by color code):
+#   §0-§9, §a-§f - Colors, §l - Bold, §o - Italic, §n - Underline, §r - Reset
+# Examples:
+#   "§b[Discord] §f<{username}> {message}"        -> [Discord] <User> Hello!
+#   "§7[§9Discord§7] §f{username}: {message}"     -> [Discord] User: Hello!
+#   "§d💬 {username} §f» {message}"                -> 💬 User » Hello!
+discordToMinecraftFormat = "§b[Discord] §f<{username}> {message}"
+
+# ============================================
+# JOIN/LEAVE/DEATH/ADVANCEMENT MESSAGES
+# ============================================
+
+# Send player join messages to Discord
+sendJoinMessages = true
+
+# Send player leave messages to Discord
+sendLeaveMessages = true
+
+# Send player death messages to Discord (with skull emoji)
+sendDeathMessages = true
+
+# Send player advancement messages to Discord (with achievement emoji)
+sendAdvancementMessages = true
+
+# ============================================
+# LOOP PREVENTION SETTINGS (CRITICAL!)
+# ============================================
+# These settings prevent infinite message loops when multiple servers
+# share a Discord channel.
+
+# Ignore messages from Discord bots
+# Recommended: true (prevents loops with other bots)
+ignoreBots = true
+
+# Ignore messages from Discord webhooks
+# Recommended: true (prevents loops with webhook messages)
+ignoreWebhooks = true
+
+# Ignore messages from this bot itself
+# Recommended: true (prevents self-loops)
+ignoreOwnMessages = true
+
+# ============================================
+# MULTI-SERVER SUPPORT SETTINGS
+# ============================================
+
+# Only ignore webhook messages that start with this server's prefix
+# When true: Allows messages from other servers' webhooks to appear in-game
+# When false: Ignores ALL webhook messages (breaks multi-server chat)
+# IMPORTANT: Set to TRUE for multi-server setups!
+# Example: Server A has prefix [Survival], Server B has [Creative]
+#          With filterByPrefix=true, Server A will show messages from [Creative]
+#          but ignore its own [Survival] webhook messages
+filterByPrefix = true
+
+# Show the server prefix in-game for messages from other servers
+# When true: "[Creative]Steve: Hello" appears in [Survival] server
+# When false: "Steve: Hello" appears without the [Creative] prefix
+showServerPrefixInGame = true
+
+# ============================================
+# WEBHOOK SETTINGS
+# ============================================
+
+# Format for webhook username displayed in Discord
+# Placeholders:
+#   {prefix}   - Server prefix
+#   {username} - Player username
+# Examples:
+#   "{prefix}{username}"        -> [BMC]Steve
+#   "{prefix} {username}"       -> [BMC] Steve
+#   "{username} {prefix}"       -> Steve [BMC]
+webhookUsernameFormat = "{prefix}{username}"
+
+# URL for webhook avatar (player head)
+# Placeholders:
+#   {uuid}     - Player UUID (without dashes)
+#   {username} - Player username
+# Popular services:
+#   Crafatar: "https://crafatar.com/avatars/{uuid}?overlay"
+#   Minotar: "https://minotar.net/avatar/{username}/100.png"
+#   MC-Heads: "https://mc-heads.net/avatar/{uuid}"
+# Leave empty for default Discord avatar
+webhookAvatarUrl = "https://crafatar.com/avatars/{uuid}?overlay"
+
+# ============================================
+# BOT STATUS SETTINGS
+# ============================================
+
+# Update bot status to show player count
+setBotStatus = true
+
+# Bot status format
+# Placeholders:
+#   {online} - Current player count
+#   {max}    - Maximum player count
+# Examples:
+#   "{online}/{max} players online"       -> 5/20 players online
+#   "Playing with {online} players"       -> Playing with 5 players
+#   "{online} online | {max} max"         -> 5 online | 20 max
+botStatusFormat = "{online}/{max} players online"
+
+# ============================================
+# ADVANCED SETTINGS
+# ============================================
+
+# Enable detailed debug logging
+# Useful for troubleshooting connection issues and message loops
+# Shows: Which messages are ignored, why they're ignored, webhook sends, etc.
+enableDebugLogging = false
+
+# Maximum number of messages to queue before dropping them
+# If Discord is slow or offline, messages queue up to this limit
+# Range: 10-1000
+messageQueueSize = 100
+
+# Delay between sending messages in milliseconds
+# Helps prevent Discord rate limiting
+# 1000 = 1 second between messages
+# Range: 100-5000
+rateLimitDelay = 1000
+
+# ============================================
+# EXAMPLE CONFIGURATIONS
+# ============================================
+
+# --- SINGLE SERVER SETUP ---
+# Use these settings if you have ONE Minecraft server:
+#
+# serverPrefix = "[Server]"
+# serverName = "My Minecraft Server"
+# filterByPrefix = false  # Can be false since there's only one server
+# ignoreWebhooks = true   # Ignore all webhooks to prevent loops
+
+# --- MULTI-SERVER SETUP ---
+# Use these settings if you have MULTIPLE servers sharing one Discord channel:
+#
+# SERVER 1 (Survival):
+#   serverPrefix = "[Survival]"
+#   serverName = "Survival Server"
+#   filterByPrefix = true        # CRITICAL!
+#   showServerPrefixInGame = true
+#   ignoreWebhooks = true
+#
+# SERVER 2 (Creative):
+#   serverPrefix = "[Creative]"
+#   serverName = "Creative Server"
+#   filterByPrefix = true        # CRITICAL!
+#   showServerPrefixInGame = true
+#   ignoreWebhooks = true
+#
+# SERVER 3 (Minigames):
+#   serverPrefix = "[Minigames]"
+#   serverName = "Minigames Server"
+#   filterByPrefix = true        # CRITICAL!
+#   showServerPrefixInGame = true
+#   ignoreWebhooks = true
+#
+# All three servers use:
+#   - Same discordBotToken
+#   - Same discordChannelId
+#   - Same discordWebhookUrl
+#   - DIFFERENT serverPrefix (this is what prevents loops!)
+
+# ============================================
+# TROUBLESHOOTING
+# ============================================
+
+# Bot not connecting?
+# - Check your bot token is correct
+# - Enable Message Content Intent in Discord Developer Portal
+# - Verify bot is in your Discord server
+# - Check server logs for errors
+
+# Messages not appearing in Discord?
+# - Verify webhook URL is correct and not deleted
+# - Check bot has permission to read the channel
+# - Enable debugLogging to see errors
+
+# Messages from Discord not appearing in Minecraft?
+# - Verify channel ID is correct
+# - Check ignoreBots setting isn't blocking real users
+# - Ensure bot has "Read Messages" and "Read Message History" permissions
+
+# Message loops (messages repeating infinitely)?
+# - Set filterByPrefix = true
+# - Ensure each server has a UNIQUE prefix
+# - Set ignoreWebhooks = true
+# - Set ignoreOwnMessages = true
+# - Enable debugLogging to see what's being filtered
+
+# Messages from other servers not showing?
+# - Set filterByPrefix = true (not false!)
+# - Set ignoreWebhooks = true (yes, still true!)
+# - Verify other servers have DIFFERENT prefixes
+# - Enable showServerPrefixInGame = true

@@ -1,0 +1,205 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.116'
+    id 'idea'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+version = mod_version
+group = mod_group_id
+
+repositories {
+    mavenCentral()
+}
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+dependencies {
+    // Platform-provided dependencies - use compileOnly
+    compileOnly 'com.google.code.gson:gson:2.10.1' // Provided by Minecraft
+    compileOnly 'org.slf4j:slf4j-api:2.0.9' // Provided by Minecraft
+    
+    // Javacord for Discord Bot API (bot status, slash commands)
+    implementation 'org.javacord:javacord:3.8.0'
+    
+    // OkHttp3 for webhooks (faster than Javacord webhooks)
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okio:okio-jvm:3.9.0'
+
+    // Bundle Javacord (split into API and Core modules)
+    jarJar('org.javacord:javacord-api:3.8.0') {
+        version {
+            strictly '[3.8.0, 4.0.0)'
+            prefer '3.8.0'
+        }
+    }
+    jarJar('org.javacord:javacord-core:3.8.0') {
+        version {
+            strictly '[3.8.0, 4.0.0)'
+            prefer '3.8.0'
+        }
+    }
+    jarJar('io.vavr:vavr:0.10.4') {
+        version {
+            strictly '[0.10.0, 1.0.0)'
+            prefer '0.10.4'
+        }
+    }
+    jarJar('io.vavr:vavr-match:0.10.4') {
+        version {
+            strictly '[0.10.0, 1.0.0)'
+            prefer '0.10.4'
+        }
+    }
+    jarJar('com.codahale:xsalsa20poly1305:0.11.0') {
+        version {
+            strictly '[0.11.0, 1.0.0)'
+            prefer '0.11.0'
+        }
+    }
+    
+    // Bundle OkHttp and dependencies
+    jarJar('com.squareup.okhttp3:okhttp:4.12.0') {
+        version {
+            strictly '[4.12.0, 5.0.0)'
+            prefer '4.12.0'
+        }
+    }
+    jarJar('com.squareup.okio:okio-jvm:3.9.0') {
+        version {
+            strictly '[3.9.0, 4.0.0)'
+            prefer '3.9.0'
+        }
+    }
+    
+    // Javacord transitive dependencies
+    jarJar('com.fasterxml.jackson.core:jackson-databind:2.17.0') {
+        version {
+            strictly '[2.17.0, 3.0.0)'
+            prefer '2.17.0'
+        }
+    }
+    jarJar('com.fasterxml.jackson.core:jackson-core:2.17.0') {
+        version {
+            strictly '[2.17.0, 3.0.0)'
+            prefer '2.17.0'
+        }
+    }
+    jarJar('com.fasterxml.jackson.core:jackson-annotations:2.17.0') {
+        version {
+            strictly '[2.17.0, 3.0.0)'
+            prefer '2.17.0'
+        }
+    }
+    jarJar('com.neovisionaries:nv-websocket-client:2.14') {
+        version {
+            strictly '[2.14, 3.0.0)'
+            prefer '2.14'
+        }
+    }
+    jarJar('com.squareup.okhttp3:logging-interceptor:4.12.0') {
+        version {
+            strictly '[4.12.0, 5.0.0)'
+            prefer '4.12.0'
+        }
+    }
+}
+
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

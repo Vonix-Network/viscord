@@ -1,0 +1,64 @@
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VSCode
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Minecraft
+run/
+logs/
+*.log
+
+# Build outputs
+*.jar
+!gradle/wrapper/*.jar
+
+# Forge/NeoForge specific
+.mixin.out/
+asm/
+
+# Runtime
+config/
+crash-reports/
+mods/
+saves/
+
+# Development
+*.zip
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Git
+.git/
+.gitattributes

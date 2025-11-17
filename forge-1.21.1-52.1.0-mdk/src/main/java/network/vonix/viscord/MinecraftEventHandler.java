@@ -1,0 +1,218 @@
+package network.vonix.viscord;
+
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.event.ServerChatEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.AdvancementEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+@Mod.EventBusSubscriber(modid = Viscord.MODID)
+public class MinecraftEventHandler {
+
+    @SubscribeEvent(priority = EventPriority.NORMAL)
+    public static void onServerChat(ServerChatEvent event) {
+        if (!DiscordManager.getInstance().isRunning()) {
+            return;
+        }
+
+        ServerPlayer player = event.getPlayer();
+        String username = player.getName().getString();
+        String message = event.getRawText();
+
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug("Chat message from {}: {}", username, message);
+        }
+
+        // Send to Discord via webhook
+        DiscordManager.getInstance().sendMinecraftMessage(username, message);
+    }
+
+    @SubscribeEvent(priority = EventPriority.NORMAL)
+    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        Viscord.LOGGER.info("PlayerJoin event triggered");
+
+        if (!DiscordManager.getInstance().isRunning()) {
+            Viscord.LOGGER.warn(
+                "DiscordManager is not running, skipping join message"
+            );
+            return;
+        }
+
+        if (!Config.SEND_JOIN_MESSAGES.get()) {
+            Viscord.LOGGER.info("Join messages disabled in config");
+            return;
+        }
+
+        ServerPlayer player = (ServerPlayer) event.getEntity();
+        String username = player.getName().getString();
+
+        Viscord.LOGGER.info("Sending join message for player: {}", username);
+
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug("Player joined: {}", username);
+        }
+
+        DiscordManager.getInstance().sendJoinEmbed(username);
+
+        Viscord.LOGGER.info("Join message sent successfully");
+
+        // Update bot status with new player count
+        DiscordManager.getInstance().updateBotStatus();
+    }
+
+    @SubscribeEvent(priority = EventPriority.NORMAL)
+    public static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
+        Viscord.LOGGER.info("PlayerLeave event triggered");
+
+        if (!DiscordManager.getInstance().isRunning()) {
+            Viscord.LOGGER.warn(
+                "DiscordManager is not running, skipping leave message"
+            );
+            return;
+        }
+
+        if (!Config.SEND_LEAVE_MESSAGES.get()) {
+            Viscord.LOGGER.info("Leave messages disabled in config");
+            return;
+        }
+
+        ServerPlayer player = (ServerPlayer) event.getEntity();
+        String username = player.getName().getString();
+
+        Viscord.LOGGER.info("Sending leave message for player: {}", username);
+
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug("Player left: {}", username);
+        }
+
+        DiscordManager.getInstance().sendLeaveEmbed(username);
+
+        Viscord.LOGGER.info("Leave message sent successfully");
+
+        // Update bot status with new player count (schedule on server thread)
+        scheduleStatusUpdate(player.getServer());
+    }
+
+    @SubscribeEvent(priority = EventPriority.NORMAL)
+    public static void onPlayerDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+
+        Viscord.LOGGER.info(
+            "PlayerDeath event triggered for: {}",
+            player.getName().getString()
+        );
+
+        if (!DiscordManager.getInstance().isRunning()) {
+            Viscord.LOGGER.warn(
+                "DiscordManager is not running, skipping death message"
+            );
+            return;
+        }
+
+        if (!Config.SEND_DEATH_MESSAGES.get()) {
+            Viscord.LOGGER.info("Death messages disabled in config");
+            return;
+        }
+
+        String deathMessage = event
+            .getSource()
+            .getLocalizedDeathMessage(player)
+            .getString();
+
+        Viscord.LOGGER.info("Sending death message: {}", deathMessage);
+
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug("Player death: {}", deathMessage);
+        }
+
+        DiscordManager.getInstance().sendSystemMessage("💀 " + deathMessage);
+        Viscord.LOGGER.info("Death message sent successfully");
+    }
+
+    @SubscribeEvent(priority = EventPriority.NORMAL)
+    public static void onAdvancement(
+        AdvancementEvent.AdvancementEarnEvent event
+    ) {
+        ServerPlayer player = (ServerPlayer) event.getEntity();
+        AdvancementHolder advancement = event.getAdvancement();
+
+        Viscord.LOGGER.info(
+            "Advancement event triggered for: {}",
+            player.getName().getString()
+        );
+
+        if (!DiscordManager.getInstance().isRunning()) {
+            Viscord.LOGGER.warn(
+                "DiscordManager is not running, skipping advancement message"
+            );
+            return;
+        }
+
+        if (!Config.SEND_ADVANCEMENT_MESSAGES.get()) {
+            Viscord.LOGGER.info("Advancement messages disabled in config");
+            return;
+        }
+
+        // Only announce advancements that should be announced (not recipes, etc.)
+        if (advancement.value().display().isEmpty()) {
+            Viscord.LOGGER.debug("Advancement has no display, skipping");
+            return;
+        }
+
+        var display = advancement.value().display().get();
+        if (!display.shouldAnnounceChat()) {
+            Viscord.LOGGER.debug(
+                "Advancement should not be announced in chat, skipping"
+            );
+            return;
+        }
+
+        String username = player.getName().getString();
+        String advancementTitle = display.getTitle().getString();
+        String advancementDescription = display.getDescription().getString();
+
+        Viscord.LOGGER.info(
+            "Sending advancement message for: {} - {}",
+            username,
+            advancementTitle
+        );
+
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug(
+                "Player advancement: {} - {}",
+                username,
+                advancementTitle
+            );
+        }
+
+        DiscordManager.getInstance().sendAdvancementEmbed(
+            username,
+            advancementTitle,
+            advancementDescription,
+            display.getType().name()
+        );
+
+        Viscord.LOGGER.info("Advancement message sent successfully");
+    }
+
+    private static void scheduleStatusUpdate(net.minecraft.server.MinecraftServer server) {
+        // Schedule status update on the server thread after a short delay
+        if (server != null) {
+            server.execute(() -> {
+                try {
+                    Thread.sleep(100); // Small delay to ensure player list is updated
+                    DiscordManager.getInstance().updateBotStatus();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    Viscord.LOGGER.warn("Status update interrupted");
+                }
+            });
+        }
+    }
+}

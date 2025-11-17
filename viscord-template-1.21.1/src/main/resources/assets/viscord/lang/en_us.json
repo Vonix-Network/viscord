@@ -1,0 +1,13 @@
+{
+  "itemGroup.viscord": "Example Mod Tab",
+  "block.viscord.example_block": "Example Block",
+  "item.viscord.example_item": "Example Item",
+
+  "viscord.configuration.title": "Viscord Configs",
+  "viscord.configuration.section.viscord.common.toml": "Viscord Configs",
+  "viscord.configuration.section.viscord.common.toml.title": "Viscord Configs",
+  "viscord.configuration.items": "Item List",
+  "viscord.configuration.logDirtBlock": "Log Dirt Block",
+  "viscord.configuration.magicNumberIntroduction": "Magic Number Text",
+  "viscord.configuration.magicNumber": "Magic Number"
+}

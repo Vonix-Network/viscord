@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="viscord"
+version="${mod_version}"
+displayName="Viscord"
+authors="Viscord Team"
+description='''Bidirectional Minecraft-Discord chat integration mod.
+Supports custom webhook formatting, multi-server setups, and advanced loop prevention.
+Built for Forge 1.20.1.'''
+
+[[dependencies.viscord]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.viscord]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"

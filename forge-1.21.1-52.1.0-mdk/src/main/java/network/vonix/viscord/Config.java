@@ -63,6 +63,19 @@ public class Config {
             ""
         );
 
+    public static final ForgeConfigSpec.ConfigValue<String> EVENT_WEBHOOK_ID =
+        BUILDER.comment(
+            "Discord Event Webhook ID for message filtering (prevents loops)",
+            "⚙️ Leave empty to auto-extract from event webhook URL (recommended)",
+            "",
+            "Only needed if using a separate event webhook.",
+            "Manual setup (only if auto-extract fails):",
+            "1. Enable Discord Developer Mode",
+            "2. Send a test event message from Minecraft",
+            "3. Right-click the webhook's name/avatar in Discord",
+            "4. Copy ID and paste here"
+        ).define("eventWebhookId", "");
+
     // Server Identity Settings
     public static final ForgeConfigSpec.ConfigValue<String> SERVER_PREFIX =
         BUILDER.comment(

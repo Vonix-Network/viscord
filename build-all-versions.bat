@@ -51,7 +51,7 @@ cd ..
 
 echo.
 echo Copying NeoForge 1.21.1 JAR...
-copy "neoforge-1.21.1\build\libs\viscord-1.0.0.jar" "Universal-Build\viscord-1.0.0-neoforge-1.21.1.jar"
+copy "neoforge-1.21.1\build\libs\viscord-1.0.1.jar" "Universal-Build\viscord-1.0.1-neoforge-1.21.1.jar"
 echo NeoForge 1.21.1 build complete!
 
 REM ====================================================================
@@ -76,7 +76,7 @@ cd ..
 
 echo.
 echo Copying Forge 1.20.1 JAR...
-copy "forge-1.20.1-47.4.0-mdk\build\libs\viscord-1.0.0.jar" "Universal-Build\viscord-1.0.0-forge-1.20.1.jar"
+copy "forge-1.20.1-47.4.0-mdk\build\libs\viscord-1.0.1.jar" "Universal-Build\viscord-1.0.1-forge-1.20.1.jar"
 echo ✓ Forge 1.20.1 build complete!
 
 REM ====================================================================
@@ -101,7 +101,7 @@ cd ..
 
 echo.
 echo Copying Forge 1.21.1 JAR...
-copy "forge-1.21.1-52.1.0-mdk\build\libs\viscord-1.0.0.jar" "Universal-Build\viscord-1.0.0-forge-1.21.1.jar"
+copy "forge-1.21.1-52.1.0-mdk\build\libs\viscord-1.0.1.jar" "Universal-Build\viscord-1.0.1-forge-1.21.1.jar"
 echo ✓ Forge 1.21.1 build complete!
 
 REM ====================================================================

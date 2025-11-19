@@ -174,6 +174,83 @@ setBotStatus = true             # Update bot status with player count
 botStatusFormat = "{online}/{max} players online"
 ```
 
+## Performance & Memory Notes
+
+Viscord is designed to be lightweight, but high-traffic or multi-server setups can still push Discord and JVM memory. The following settings and behaviors are important for performance:
+
+### Discord Intents
+
+Viscord only requests the minimal Discord intents needed:
+
+- `GUILD_MESSAGES`
+- `MESSAGE_CONTENT`
+
+This avoids the heavy `setAllIntents()` mode and significantly reduces:
+
+- Number of events delivered to the bot
+- Message cache size
+- CPU and memory usage
+
+### Message Queue
+
+Outbound webhook messages are buffered through a bounded queue:
+
+- `messageQueueSize` (config: `messageQueueSize`, default `100`)
+
+This:
+
+- Limits how many messages can be queued if Discord is slow or offline
+- Prevents unbounded memory growth from pending messages
+- Drops new messages (with a warning) if the queue is full
+
+Tuning tips:
+
+- Low RAM / small servers: lower to `50`
+- Busy servers: keep at `100` or slightly higher if needed
+
+### Rate Limiting
+
+To avoid Discord rate limits and smooth bursty traffic:
+
+- `rateLimitDelay` (config: `rateLimitDelay`, default `1000` ms)
+
+Higher values:
+
+- Smooth outbound traffic
+- Reduce chance of HTTP 429 and backpressure from Discord
+
+### Javacord Shutdown & Stuck Threads
+
+On server stop or crash, Viscord performs a controlled shutdown:
+
+1. Stops the internal message queue thread with a short timeout
+2. Calls `discordApi.disconnect()` and waits (with a timeout)
+3. Cleanly shuts down the HTTP client thread pool and connections
+
+This prevents:
+
+- Stuck `Javacord` threads reported by tools like AllTheLeaks
+- Servers failing to fully stop / restart due to lingering Discord threads
+
+If shutdown takes too long or fails, detailed warnings are logged so you can diagnose it.
+
+### Debug Logging
+
+`enableDebugLogging` (config: `enableDebugLogging`) should be:
+
+- `false` in production for lower overhead and cleaner logs
+- `true` only when actively troubleshooting (logs all Discord messages, filters, and webhook details)
+
+### Multi-Server Event & Chat Routing
+
+Multi-server setups add more Discord traffic. For best performance:
+
+- Use `ignoreOtherWebhooks` and `filterByPrefix` to control how much cross-server chatter you ingest
+- Use `showOtherServerEvents` to decide whether join/leave/death/advancement from other servers appear in your Minecraft chat
+- Use `eventChannelId` / `eventWebhookUrl` to route events to a separate, dedicated channel to keep chat quieter
+
+Properly tuning these helps keep both Minecraft and Discord usage efficient on large networks.
+
 ## 🏗️ Architecture
 
 ### Technology Stack

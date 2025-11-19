@@ -35,8 +35,13 @@ A powerful NeoForge mod for Minecraft 1.21.1 that provides seamless bidirectiona
 - 📊 Bot status shows live player count
 
 ### Customization
-- Fully configurable message formats
-- Custom server prefixes and names
+- ### ⚙️ Highly Configurable
+- Custom message formats
+- Toggle individual event types
+- Separate event channel routing (optional)
+- Rate limiting configuration
+- Debug logging
+- Loop prevention options
 - Player avatar support using Crafatar
 - Configurable rate limiting
 - Debug logging for troubleshooting
@@ -126,6 +131,7 @@ discordToMinecraftFormat = "§b[Discord] §f<{username}> {message}"
 # Webhook Settings
 webhookUsernameFormat = "{prefix}{username}"
 webhookAvatarUrl = "https://crafatar.com/avatars/{uuid}?overlay"
+serverAvatarUrl = "https://i.ibb.co/PvmgMHJR/image.png"  # Avatar for server events
 
 # Loop Prevention (IMPORTANT!)
 ignoreBots = true
@@ -138,6 +144,11 @@ sendJoinMessages = true
 sendLeaveMessages = true
 sendDeathMessages = true
 sendAdvancementMessages = true
+
+# Event Channel Routing (Optional - NEW!)
+# Send events to a different channel than chat messages
+eventChannelId = ""           # Leave empty to use default channel
+eventWebhookUrl = ""          # Leave empty to use default webhook
 
 # Bot Status
 setBotStatus = true
@@ -199,6 +210,26 @@ showServerPrefixInGame = true  # Show other servers' prefixes in-game
 - `filterByPrefix = true` ensures each server only ignores its own webhook messages
 - Messages from other servers' webhooks are displayed in-game
 - No message loops occur because each server ignores only its own prefix
+
+## 📢 Event Channel Routing
+
+Route event messages (join/leave/death/advancement) to a separate Discord channel:
+
+```toml
+# Chat messages go to this channel
+discordChannelId = "123456789012345678"
+discordWebhookUrl = "https://discord.com/api/webhooks/123456789012345678/..."
+
+# Event messages go to this channel (optional)
+eventChannelId = "987654321098765432"
+eventWebhookUrl = "https://discord.com/api/webhooks/987654321098765432/..."
+```
+
+**Use Cases:**
+- Keep chat in `#minecraft-chat` and events in `#minecraft-events`
+- Reduce noise in your main chat channel
+- Archive player activity separately
+- Leave empty to use the default channel for all messages
 
 ## 🎨 Message Format Placeholders
 

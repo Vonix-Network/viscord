@@ -28,6 +28,7 @@ Viscord is a powerful mod that bridges communication between Minecraft servers a
 - 🏆 Advancement/achievement announcements
 - 📊 Live player count in bot status
 - ⚡ Discord slash commands (`/list`)
+- 📍 Optional: Route events to separate channel
 
 ### ⚙️ Highly Configurable
 - Custom message formats
@@ -85,6 +86,10 @@ sendJoinMessages = true
 sendLeaveMessages = true
 sendDeathMessages = true
 sendAdvancementMessages = true
+
+# Event Channel (Optional - leave empty to use default channel)
+eventChannelId = ""           # Separate channel for events
+eventWebhookUrl = ""          # Separate webhook for events
 
 # Loop Prevention
 ignoreBots = true

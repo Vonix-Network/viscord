@@ -31,7 +31,7 @@ public class Viscord {
     public static final String MODID = "viscord";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public Viscord() {
+    public Viscord(IEventBus modEventBus, ModLoadingContext modLoadingContext) {
         // Register ourselves for server and other game events
         MinecraftForge.EVENT_BUS.register(this);
 
@@ -39,7 +39,7 @@ public class Viscord {
         // No need to manually register it here
 
         // Register our mod's config so that FML can create and load the config file
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "viscord-common.toml");
+        modLoadingContext.registerConfig(ModConfig.Type.COMMON, Config.SPEC, "viscord-common.toml");
 
         LOGGER.info(
             "Viscord initialized - Bidirectional Discord chat mod loaded"

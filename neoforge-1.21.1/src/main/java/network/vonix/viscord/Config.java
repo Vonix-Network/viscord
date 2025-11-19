@@ -184,6 +184,28 @@ public class Config {
             true
         );
 
+    public static final ModConfigSpec.ConfigValue<String> EVENT_CHANNEL_ID =
+        BUILDER.comment(
+            "Discord Channel ID for event messages (join/leave/death/advancement)",
+            "Leave empty to use the default channel (discordChannelId)",
+            "How to get: Right-click the channel → Copy ID",
+            "(Enable Developer Mode in Discord settings first)"
+        ).define("eventChannelId", "");
+
+    public static final ModConfigSpec.ConfigValue<String> EVENT_WEBHOOK_URL =
+        BUILDER.comment(
+            "Discord Webhook URL for event messages",
+            "Leave empty to use the default webhook (webhookUrl)",
+            "How to create:",
+            "1. Right-click your Discord channel",
+            "2. Edit Channel → Integrations → Webhooks",
+            "3. New Webhook → Copy Webhook URL",
+            "4. Paste it here"
+        ).define(
+            "eventWebhookUrl",
+            ""
+        );
+
     static {
         BUILDER.pop();
     }
@@ -254,6 +276,13 @@ public class Config {
             "Example: '[Creative]PlayerName: Hello' instead of 'PlayerName: Hello'"
         ).define("showPrefixInGame", true);
 
+    public static final ModConfigSpec.BooleanValue SHOW_OTHER_SERVER_EVENTS =
+        BUILDER.comment(
+            "Show join/leave/death/advancement events from other servers in Minecraft chat",
+            "When enabled, you'll see '[Creative] PlayerName joined the server' etc.",
+            "Uses embed footer detection (Viscord · Join, Viscord · Leave, etc.)"
+        ).define("showOtherServerEvents", true);
+
     static {
         BUILDER.pop();
     }
@@ -288,6 +317,16 @@ public class Config {
         ).define(
             "avatarUrl",
             "https://crafatar.com/avatars/{uuid}?overlay"
+        );
+
+    public static final ModConfigSpec.ConfigValue<String> SERVER_AVATAR_URL =
+        BUILDER.comment(
+            "URL for server/event message avatars in Discord",
+            "Used for startup, shutdown, join, leave, death, and advancement messages",
+            "Leave empty to use default Discord avatar"
+        ).define(
+            "serverAvatarUrl",
+            "https://i.ibb.co/PvmgMHJR/image.png"
         );
 
     static {

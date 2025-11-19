@@ -277,6 +277,20 @@ public class DiscordManager {
                 }
             }
 
+            // Check for event embeds from other servers (join/leave/death/advancement)
+            if (Config.SHOW_OTHER_SERVER_EVENTS.get() && isWebhook && !event.getMessage().getEmbeds().isEmpty()) {
+                String eventMessage = parseEventEmbed(event, authorName);
+                if (eventMessage != null) {
+                    Viscord.LOGGER.info("  → RELAYING EVENT to Minecraft: {}", eventMessage);
+                    if (server != null) {
+                        Component component = Component.literal(eventMessage);
+                        server.getPlayerList().getPlayers()
+                            .forEach(player -> player.sendSystemMessage(component));
+                    }
+                    return; // Event was processed, don't process as regular message
+                }
+            }
+
             if (content.isEmpty()) {
                 Viscord.LOGGER.info("  → FILTERED: Empty message content");
                 return;
@@ -304,6 +318,94 @@ public class DiscordManager {
             }
         } catch (Exception e) {
             Viscord.LOGGER.error("Error processing Discord message", e);
+        }
+    }
+
+    /**
+     * Parse event embeds from other servers and format them for Minecraft chat.
+     * Returns null if the embed is not a recognized event type.
+     */
+    private String parseEventEmbed(org.javacord.api.event.message.MessageCreateEvent event, String serverName) {
+        try {
+            var embeds = event.getMessage().getEmbeds();
+            if (embeds.isEmpty()) {
+                return null;
+            }
+
+            var embed = embeds.get(0); // Get first embed
+            var footer = embed.getFooter();
+            if (!footer.isPresent()) {
+                return null;
+            }
+
+            String footerText = footer.get().getText().orElse("");
+            String title = embed.getTitle().orElse("");
+            
+            // Check if it's a Viscord event based on footer
+            if (!footerText.startsWith("Viscord ·")) {
+                return null;
+            }
+
+            // Extract server prefix from webhook name (e.g., "[Creative]ServerName")
+            String serverPrefix = "";
+            if (serverName.startsWith("[") && serverName.contains("]")) {
+                serverPrefix = serverName.substring(0, serverName.indexOf("]") + 1) + " ";
+            }
+
+            // Parse event type from footer
+            if (footerText.contains("· Join")) {
+                // Player joined - extract from fields
+                var fields = embed.getFields();
+                String playerName = fields.stream()
+                    .filter(f -> f.getName().equals("Player"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("Unknown");
+                return String.format("§a[+] %s%s joined the server", serverPrefix, playerName);
+                
+            } else if (footerText.contains("· Leave")) {
+                // Player left
+                var fields = embed.getFields();
+                String playerName = fields.stream()
+                    .filter(f -> f.getName().equals("Player"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("Unknown");
+                return String.format("§c[-] %s%s left the server", serverPrefix, playerName);
+                
+            } else if (footerText.contains("· Death")) {
+                // Player death
+                String description = embed.getDescription().orElse("");
+                if (description.startsWith("💀 ")) {
+                    description = description.substring(2); // Remove skull emoji
+                }
+                return String.format("§4☠ %s%s", serverPrefix, description);
+                
+            } else if (footerText.contains("· Advancement")) {
+                // Player advancement
+                var fields = embed.getFields();
+                String playerName = fields.stream()
+                    .filter(f -> f.getName().equals("Player"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("Unknown");
+                String advTitle = fields.stream()
+                    .filter(f -> f.getName().equals("Title"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("advancement");
+                return String.format("§e⭐ %s%s completed: %s", serverPrefix, playerName, advTitle);
+                
+            } else if (footerText.contains("· Startup")) {
+                return String.format("§a✓ %sserver is now online", serverPrefix);
+                
+            } else if (footerText.contains("· Shutdown")) {
+                return String.format("§c✗ %sserver is shutting down", serverPrefix);
+            }
+
+            return null; // Unknown event type
+            
+        } catch (Exception e) {
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.warn("Error parsing event embed", e);
+            }
+            return null;
         }
     }
 
@@ -362,7 +464,7 @@ public class DiscordManager {
 
         // Send as webhook embed for death messages
         if (message.startsWith("💀")) {
-            sendWebhookEmbed(embed -> {
+            sendEventEmbed(embed -> {
                 embed.addProperty("title", "Player Died");
                 embed.addProperty("description", message);
                 embed.addProperty("color", 0xF04747);
@@ -377,6 +479,25 @@ public class DiscordManager {
     }
 
     // ========= Event Embeds =========
+
+    /**
+     * Get the webhook URL for event messages.
+     * Returns the event-specific webhook if configured, otherwise the default webhook.
+     */
+    private String getEventWebhookUrl() {
+        String eventWebhookUrl = Config.EVENT_WEBHOOK_URL.get();
+        if (eventWebhookUrl != null && !eventWebhookUrl.isEmpty()) {
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.debug("Using event-specific webhook URL");
+            }
+            return eventWebhookUrl;
+        }
+        
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug("Using default webhook URL for events");
+        }
+        return Config.DISCORD_WEBHOOK_URL.get();
+    }
 
     public void sendStartupEmbed(String serverName) {
         sendWebhookEmbed(embed -> {
@@ -426,7 +547,7 @@ public class DiscordManager {
 
     public void sendJoinEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendWebhookEmbed(embed -> {
+        sendEventEmbed(embed -> {
             embed.addProperty("title", "Player Joined");
             embed.addProperty("description", "A player joined the server.");
             embed.addProperty("color", 0x5865F2);
@@ -462,7 +583,7 @@ public class DiscordManager {
 
     public void sendLeaveEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendWebhookEmbed(embed -> {
+        sendEventEmbed(embed -> {
             embed.addProperty("title", "Player Left");
             embed.addProperty("description", "A player left the server.");
             embed.addProperty("color", 0x99AAB5);
@@ -511,7 +632,7 @@ public class DiscordManager {
             colorInt = 0x43B581;
         }
 
-        sendWebhookEmbed(embed -> {
+        sendEventEmbed(embed -> {
             embed.addProperty("title", emoji + " Advancement Made");
             embed.addProperty(
                 "description",
@@ -651,10 +772,33 @@ public class DiscordManager {
 
     // ========= Webhook Sending =========
 
+    /**
+     * Send an event embed using the event-specific webhook URL (or default if not configured).
+     */
+    private void sendEventEmbed(
+        java.util.function.Consumer<JsonObject> customize
+    ) {
+        String webhookUrl = getEventWebhookUrl();
+        sendWebhookEmbedToUrl(webhookUrl, customize);
+    }
+
+    /**
+     * Send a regular embed using the default webhook URL.
+     */
     private void sendWebhookEmbed(
         java.util.function.Consumer<JsonObject> customize
     ) {
         String webhookUrl = Config.DISCORD_WEBHOOK_URL.get();
+        sendWebhookEmbedToUrl(webhookUrl, customize);
+    }
+
+    /**
+     * Core method to send webhook embeds to a specific URL.
+     */
+    private void sendWebhookEmbedToUrl(
+        String webhookUrl,
+        java.util.function.Consumer<JsonObject> customize
+    ) {
         if (
             webhookUrl == null ||
             webhookUrl.isEmpty() ||
@@ -674,14 +818,10 @@ public class DiscordManager {
 
         payload.addProperty("username", formattedUsername);
 
-        String avatarUrl = Config.WEBHOOK_AVATAR_URL.get();
+        // Use server avatar URL for event messages
+        String avatarUrl = Config.SERVER_AVATAR_URL.get();
         if (!avatarUrl.isEmpty()) {
-            avatarUrl = avatarUrl
-                .replace("{uuid}", "")
-                .replace("{username}", baseUsername);
-            if (!avatarUrl.contains("{uuid}") && !avatarUrl.contains("{username}")) {
-                payload.addProperty("avatar_url", avatarUrl);
-            }
+            payload.addProperty("avatar_url", avatarUrl);
         }
 
         JsonObject embed = new JsonObject();

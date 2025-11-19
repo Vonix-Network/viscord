@@ -674,14 +674,10 @@ public class DiscordManager {
 
         payload.addProperty("username", formattedUsername);
 
-        String avatarUrl = Config.WEBHOOK_AVATAR_URL.get();
+        // Use server avatar URL for event messages
+        String avatarUrl = Config.SERVER_AVATAR_URL.get();
         if (!avatarUrl.isEmpty()) {
-            avatarUrl = avatarUrl
-                .replace("{uuid}", "")
-                .replace("{username}", baseUsername);
-            if (!avatarUrl.contains("{uuid}") && !avatarUrl.contains("{username}")) {
-                payload.addProperty("avatar_url", avatarUrl);
-            }
+            payload.addProperty("avatar_url", avatarUrl);
         }
 
         JsonObject embed = new JsonObject();

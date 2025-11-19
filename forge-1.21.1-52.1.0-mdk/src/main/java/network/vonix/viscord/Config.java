@@ -124,6 +124,13 @@ public class Config {
             "Show the server prefix in-game for messages from other servers"
         ).define("showServerPrefixInGame", true);
 
+    public static final ForgeConfigSpec.BooleanValue SHOW_OTHER_SERVER_EVENTS =
+        BUILDER.comment(
+            "Show join/leave/death/advancement events from other servers in Minecraft chat",
+            "When enabled, you'll see '[Creative] PlayerName joined the server' etc.",
+            "Uses embed footer detection (Viscord · Join, Viscord · Leave, etc.)"
+        ).define("showOtherServerEvents", true);
+
     // Advanced Settings
     public static final ForgeConfigSpec.BooleanValue ENABLE_DEBUG_LOGGING =
         BUILDER.comment("Enable debug logging for troubleshooting").define(
@@ -150,13 +157,29 @@ public class Config {
 
     public static final ForgeConfigSpec.ConfigValue<String> WEBHOOK_AVATAR_URL =
         BUILDER.comment(
-            "URL for webhook avatar. Use {uuid} for player UUID, {username} for player name. Leave empty for default."
+            "URL template for player avatars in Discord",
+            "Placeholders: {uuid}, {username}",
+            "Default uses Crafatar for Minecraft skins",
+            "Leave empty to use default Discord avatar"
         ).define(
-            "webhookAvatarUrl",
+            "avatarUrl",
             "https://crafatar.com/avatars/{uuid}?overlay"
         );
 
-    // Status Settings
+    public static final ForgeConfigSpec.ConfigValue<String> SERVER_AVATAR_URL =
+        BUILDER.comment(
+            "URL for server/event message avatars in Discord",
+            "Used for startup, shutdown, join, leave, death, and advancement messages",
+            "Leave empty to use default Discord avatar"
+        ).define(
+            "serverAvatarUrl",
+            "https://i.ibb.co/PvmgMHJR/image.png"
+        );
+
+    static {
+        BUILDER.pop();
+    }
+
     public static final ForgeConfigSpec.BooleanValue SET_BOT_STATUS =
         BUILDER.comment("Set bot status to show player count").define(
             "setBotStatus",

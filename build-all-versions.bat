@@ -38,7 +38,7 @@ echo [1/3] Building NeoForge 1.21.1...
 echo ====================================================================
 echo.
 
-cd viscord-template-1.21.1
+cd neoforge-1.21.1
 call gradlew.bat clean build
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -51,8 +51,8 @@ cd ..
 
 echo.
 echo Copying NeoForge 1.21.1 JAR...
-copy "viscord-template-1.21.1\build\libs\viscord-1.0.0.jar" "Universal-Build\viscord-1.0.0-neoforge-1.21.1.jar"
-echo ✓ NeoForge 1.21.1 build complete!
+copy "neoforge-1.21.1\build\libs\viscord-1.0.0.jar" "Universal-Build\viscord-1.0.0-neoforge-1.21.1.jar"
+echo NeoForge 1.21.1 build complete!
 
 REM ====================================================================
 REM Build Forge 1.20.1

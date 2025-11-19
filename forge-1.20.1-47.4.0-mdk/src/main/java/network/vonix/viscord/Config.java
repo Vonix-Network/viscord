@@ -247,18 +247,6 @@ public class Config {
             "Settings for running multiple servers in one Discord channel."
         ).push("multiServer");
     }
-
-    public static final ForgeConfigSpec.BooleanValue SHOW_SERVER_PREFIX_IN_GAME =
-        BUILDER.comment(
-            "Show server prefix in-game for messages from other servers",
-            "Example: '[Creative]PlayerName: Hello' instead of 'PlayerName: Hello'"
-        ).define("showPrefixInGame", true);
-
-    static {
-        BUILDER.pop();
-    }
-
-    // ====================================================================
     // WEBHOOK APPEARANCE SETTINGS
     // ====================================================================
     
@@ -288,6 +276,16 @@ public class Config {
         ).define(
             "avatarUrl",
             "https://crafatar.com/avatars/{uuid}?overlay"
+        );
+
+    public static final ForgeConfigSpec.ConfigValue<String> SERVER_AVATAR_URL =
+        BUILDER.comment(
+            "URL for server/event message avatars in Discord",
+            "Used for startup, shutdown, join, leave, death, and advancement messages",
+            "Leave empty to use default Discord avatar"
+        ).define(
+            "serverAvatarUrl",
+            "https://i.ibb.co/PvmgMHJR/image.png"
         );
 
     static {

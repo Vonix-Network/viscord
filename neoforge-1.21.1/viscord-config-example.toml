@@ -85,6 +85,30 @@ sendDeathMessages = true
 sendAdvancementMessages = true
 
 # ============================================
+# EVENT CHANNEL ROUTING (OPTIONAL)
+# ============================================
+# Send event messages (join/leave/death/advancement) to a different channel
+# Leave these empty to use the default channel and webhook
+
+# Discord Channel ID for event messages
+# Leave empty to use the default channel (discordChannelId)
+# How to get: Right-click the event channel → Copy Channel ID
+eventChannelId = ""
+
+# Discord Webhook URL for event messages
+# Leave empty to use the default webhook (discordWebhookUrl)
+# How to create: Right-click your event channel > Edit Channel > Integrations > Webhooks > New Webhook
+# Then click "Copy Webhook URL"
+eventWebhookUrl = ""
+
+# Example: Send events to #minecraft-events channel
+# eventChannelId = "123456789012345678"
+# eventWebhookUrl = "https://discord.com/api/webhooks/123456789012345678/abcdef..."
+#
+# Chat messages will still go to the default channel
+# Events will go to the events channel
+
+# ============================================
 # LOOP PREVENTION SETTINGS (CRITICAL!)
 # ============================================
 # These settings prevent infinite message loops when multiple servers
@@ -120,6 +144,15 @@ filterByPrefix = true
 # When false: "Steve: Hello" appears without the [Creative] prefix
 showServerPrefixInGame = true
 
+# Show join/leave/death/advancement events from other servers in Minecraft chat
+# When enabled, you'll see color-coded event messages like:
+#   §a[+] [Creative] PlayerName joined the server
+#   §c[-] [Survival] PlayerName left the server
+#   §4☠ [Creative] PlayerName was slain by Zombie
+#   §e⭐ [Survival] PlayerName completed: Stone Age
+# These are detected from Discord embed footers (Viscord · Join, etc.)
+showOtherServerEvents = true
+
 # ============================================
 # WEBHOOK SETTINGS
 # ============================================
@@ -144,6 +177,12 @@ webhookUsernameFormat = "{prefix}{username}"
 #   MC-Heads: "https://mc-heads.net/avatar/{uuid}"
 # Leave empty for default Discord avatar
 webhookAvatarUrl = "https://crafatar.com/avatars/{uuid}?overlay"
+
+# URL for server/event message avatar
+# Used for startup, shutdown, join, leave, death, and advancement messages
+# This allows you to use a custom icon instead of player heads for server events
+# Leave empty for default Discord avatar
+serverAvatarUrl = "https://i.ibb.co/PvmgMHJR/image.png"
 
 # ============================================
 # BOT STATUS SETTINGS

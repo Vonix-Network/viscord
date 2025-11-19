@@ -26,6 +26,12 @@ public class Config {
             "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL"
         );
 
+    public static final ForgeConfigSpec.ConfigValue<String> DISCORD_INVITE_URL =
+        BUILDER.comment(
+            "Public Discord invite URL shown by the /discord command",
+            "Example: https://discord.gg/your-community"
+        ).define("discordInviteUrl", "");
+
     public static final ForgeConfigSpec.ConfigValue<String> DISCORD_WEBHOOK_ID =
         BUILDER.comment(
             "Discord Webhook ID for filtering (prevents message loops).",

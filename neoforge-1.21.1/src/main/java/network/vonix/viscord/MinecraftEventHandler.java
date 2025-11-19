@@ -1,10 +1,18 @@
 package network.vonix.viscord;
 
+import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.ServerChatEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
@@ -12,6 +20,41 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 @EventBusSubscriber(modid = Viscord.MODID)
 public class MinecraftEventHandler {
+
+    @SubscribeEvent
+    public static void onRegisterCommands(RegisterCommandsEvent event) {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+
+        dispatcher.register(
+            Commands.literal("discord")
+                .requires(source -> source.hasPermission(0))
+                .executes(context -> {
+                    String invite = Config.DISCORD_INVITE_URL.get();
+                    CommandSourceStack source = context.getSource();
+
+                    if (invite == null || invite.isEmpty()) {
+                        source.sendSuccess(
+                            () -> Component.literal(
+                                "Discord invite URL is not configured. Ask an admin to set 'discordInviteUrl' in viscord-common.toml."
+                            ),
+                            false
+                        );
+                    } else {
+                        MutableComponent clickable = Component
+                            .literal("Click Here to join the Discord!")
+                            .withStyle(style ->
+                                style
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, invite))
+                                    .withUnderlined(true)
+                                    .withColor(ChatFormatting.AQUA)
+                            );
+
+                        source.sendSuccess(() -> clickable, false);
+                    }
+                    return 1;
+                })
+        );
+    }
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onServerChat(ServerChatEvent event) {

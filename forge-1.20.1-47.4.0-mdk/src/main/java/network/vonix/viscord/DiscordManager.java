@@ -8,8 +8,12 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import okhttp3.*;
@@ -39,6 +43,10 @@ public class DiscordManager {
     private String ourWebhookId = null; // Extracted from webhook URL for precise filtering
     private String eventWebhookId = null; // Extracted from event webhook URL for precise filtering
     private DiscordApi discordApi = null; // Javacord API for bot status and commands
+
+    // Simple Markdown-style link pattern: [text](https://url)
+    private static final Pattern DISCORD_MARKDOWN_LINK =
+        Pattern.compile("\\[([^\\]]+)]\\((https?://[^)]+)\\)");
 
     private DiscordManager() {
         this.httpClient = new OkHttpClient.Builder()
@@ -382,7 +390,7 @@ public class DiscordManager {
             Viscord.LOGGER.info("  → RELAYING to Minecraft: {}", formattedMessage);
 
             if (server != null) {
-                Component component = Component.literal(formattedMessage);
+                Component component = toMinecraftComponentWithLinks(formattedMessage);
                 server
                     .getPlayerList()
                     .getPlayers()
@@ -982,6 +990,65 @@ public class DiscordManager {
         } catch (IOException e) {
             Viscord.LOGGER.error("Error sending webhook embed", e);
         }
+    }
+
+    /**
+     * Convert a plain text message (possibly containing simple Discord Markdown links
+     * like [text](https://example.com)) into a Minecraft Component with clickable links.
+     */
+    private Component toMinecraftComponentWithLinks(String text) {
+        if (text == null || text.isEmpty()) {
+            return Component.empty();
+        }
+
+        var matcher = DISCORD_MARKDOWN_LINK.matcher(text);
+        MutableComponent result = Component.empty();
+        int lastEnd = 0;
+        boolean hasLink = false;
+
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+
+            // Append plain text before the link
+            if (start > lastEnd) {
+                String before = text.substring(lastEnd, start);
+                if (!before.isEmpty()) {
+                    result.append(Component.literal(before));
+                }
+            }
+
+            String label = matcher.group(1);
+            String url = matcher.group(2);
+
+            Component linkComponent = Component
+                .literal(label)
+                .withStyle(style ->
+                    style
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))
+                        .withUnderlined(true)
+                        .withColor(ChatFormatting.AQUA)
+                );
+
+            result.append(linkComponent);
+            lastEnd = end;
+            hasLink = true;
+        }
+
+        // Append any remaining text after the last link
+        if (lastEnd < text.length()) {
+            String tail = text.substring(lastEnd);
+            if (!tail.isEmpty()) {
+                result.append(Component.literal(tail));
+            }
+        }
+
+        // If no matches were found, fall back to a simple literal component
+        if (!hasLink) {
+            return Component.literal(text);
+        }
+
+        return result;
     }
 
     private void startMessageQueueThread() {

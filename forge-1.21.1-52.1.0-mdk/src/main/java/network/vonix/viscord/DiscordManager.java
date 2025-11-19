@@ -578,7 +578,7 @@ public class DiscordManager {
     }
 
     public void sendStartupEmbed(String serverName) {
-        sendWebhookEmbed(embed -> {
+        sendEventEmbed(embed -> {
             embed.addProperty("title", "Server Online");
             embed.addProperty("description", "The server is now online.");
             embed.addProperty("color", 0x43B581);
@@ -601,7 +601,7 @@ public class DiscordManager {
     }
 
     public void sendShutdownEmbed(String serverName) {
-        sendWebhookEmbed(embed -> {
+        sendEventEmbed(embed -> {
             embed.addProperty("title", "Server Shutting Down");
             embed.addProperty("description", "The server is shutting down...");
             embed.addProperty("color", 0xF04747);

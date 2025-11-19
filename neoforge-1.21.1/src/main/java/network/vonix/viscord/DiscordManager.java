@@ -231,6 +231,12 @@ public class DiscordManager {
             String content = event.getMessageContent();
             String authorName = event.getMessageAuthor().getDisplayName();
 
+            // Handle !list command (allows all servers to respond in shared channel)
+            if (content.trim().equalsIgnoreCase("!list")) {
+                handleTextListCommand(event);
+                return;
+            }
+
             // Always log received messages to diagnose filtering
             Viscord.LOGGER.info("Received Discord message from '{}': '{}' [isBot={}, isWebhook={}]", 
                 authorName, content, isBot, isWebhook);
@@ -767,6 +773,51 @@ public class DiscordManager {
             interaction.createImmediateResponder()
                 .setContent("❌ An error occurred while fetching the player list")
                 .respond();
+        }
+    }
+
+    private void handleTextListCommand(org.javacord.api.event.message.MessageCreateEvent event) {
+        try {
+            if (server == null) {
+                return; // Silently ignore if server not available
+            }
+            
+            List<ServerPlayer> players = server.getPlayerList().getPlayers();
+            int onlinePlayers = players.size();
+            int maxPlayers = server.getPlayerList().getMaxPlayers();
+            
+            String serverName = Config.SERVER_NAME.get();
+            
+            sendWebhookEmbed(embed -> {
+                embed.addProperty("title", "📋 " + serverName);
+                embed.addProperty("color", 65280); // Green
+                
+                if (onlinePlayers == 0) {
+                    embed.addProperty("description", "No players online");
+                } else {
+                    String playerList = players.stream()
+                        .map(player -> player.getName().getString())
+                        .collect(Collectors.joining("\\n"));
+                    
+                    JsonArray fields = new JsonArray();
+                    JsonObject field = new JsonObject();
+                    field.addProperty("name", "Players " + onlinePlayers + "/" + maxPlayers);
+                    field.addProperty("value", playerList);
+                    field.addProperty("inline", false);
+                    fields.add(field);
+                    embed.add("fields", fields);
+                }
+                
+                JsonObject footer = new JsonObject();
+                footer.addProperty("text", "Viscord · Player List");
+                embed.add("footer", footer);
+            });
+            
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.debug("!list command executed by {}", event.getMessageAuthor().getDisplayName());
+            }
+        } catch (Exception e) {
+            Viscord.LOGGER.error("Error handling !list command", e);
         }
     }
 

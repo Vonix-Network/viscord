@@ -231,6 +231,12 @@ public class DiscordManager {
             String content = event.getMessageContent();
             String authorName = event.getMessageAuthor().getDisplayName();
 
+            // Handle !list command (allows all servers to respond in shared channel)
+            if (content.trim().equalsIgnoreCase("!list")) {
+                handleTextListCommand(event);
+                return;
+            }
+
             // Always log received messages to diagnose filtering
             Viscord.LOGGER.info("Received Discord message from '{}': '{}' [isBot={}, isWebhook={}]", 
                 authorName, content, isBot, isWebhook);
@@ -277,6 +283,20 @@ public class DiscordManager {
                 }
             }
 
+            // Check for event embeds from other servers (join/leave/death/advancement)
+            if (Config.SHOW_OTHER_SERVER_EVENTS.get() && isWebhook && !event.getMessage().getEmbeds().isEmpty()) {
+                String eventMessage = parseEventEmbed(event, authorName);
+                if (eventMessage != null) {
+                    Viscord.LOGGER.info("  → RELAYING EVENT to Minecraft: {}", eventMessage);
+                    if (server != null) {
+                        Component component = Component.literal(eventMessage);
+                        server.getPlayerList().getPlayers()
+                            .forEach(player -> player.sendSystemMessage(component));
+                    }
+                    return; // Event was processed, don't process as regular message
+                }
+            }
+
             if (content.isEmpty()) {
                 Viscord.LOGGER.info("  → FILTERED: Empty message content");
                 return;
@@ -304,6 +324,139 @@ public class DiscordManager {
             }
         } catch (Exception e) {
             Viscord.LOGGER.error("Error processing Discord message", e);
+        }
+    }
+
+    /**
+     * Parse event embeds from other servers and format them for Minecraft chat.
+     * Returns null if the embed is not a recognized event type.
+     */
+    private String parseEventEmbed(org.javacord.api.event.message.MessageCreateEvent event, String serverName) {
+        try {
+            var embeds = event.getMessage().getEmbeds();
+            if (embeds.isEmpty()) {
+                return null;
+            }
+
+            var embed = embeds.get(0); // Get first embed
+            var footer = embed.getFooter();
+            if (!footer.isPresent()) {
+                return null;
+            }
+
+            String footerText = footer.get().getText().orElse("");
+            String title = embed.getTitle().orElse("");
+            
+            // Check if it's a Viscord event based on footer
+            if (!footerText.startsWith("Viscord ·")) {
+                return null;
+            }
+
+            // Extract server prefix from webhook name (e.g., "[Creative]ServerName")
+            String serverPrefix = "";
+            if (serverName.startsWith("[") && serverName.contains("]")) {
+                serverPrefix = serverName.substring(0, serverName.indexOf("]") + 1) + " ";
+            }
+
+            // Parse event type from footer
+            if (footerText.contains("· Join")) {
+                // Player joined - extract from fields
+                var fields = embed.getFields();
+                String playerName = fields.stream()
+                    .filter(f -> f.getName().equals("Player"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("Unknown");
+                return String.format("§a[+] %s%s joined the server", serverPrefix, playerName);
+                
+            } else if (footerText.contains("· Leave")) {
+                // Player left
+                var fields = embed.getFields();
+                String playerName = fields.stream()
+                    .filter(f -> f.getName().equals("Player"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("Unknown");
+                return String.format("§c[-] %s%s left the server", serverPrefix, playerName);
+                
+            } else if (footerText.contains("· Death")) {
+                // Player death
+                String description = embed.getDescription().orElse("");
+                if (description.startsWith("💀 ")) {
+                    description = description.substring(2); // Remove skull emoji
+                }
+                return String.format("§4☠ %s%s", serverPrefix, description);
+                
+            } else if (footerText.contains("· Advancement")) {
+                // Player advancement
+                var fields = embed.getFields();
+                String playerName = fields.stream()
+                    .filter(f -> f.getName().equals("Player"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("Unknown");
+                String advTitle = fields.stream()
+                    .filter(f -> f.getName().equals("Title"))
+                    .map(f -> f.getValue())
+                    .findFirst().orElse("advancement");
+                return String.format("§e⭐ %s%s completed: %s", serverPrefix, playerName, advTitle);
+                
+            } else if (footerText.contains("· Startup")) {
+                return String.format("§a✓ %sserver is now online", serverPrefix);
+                
+            } else if (footerText.contains("· Shutdown")) {
+                return String.format("§c✗ %sserver is shutting down", serverPrefix);
+            }
+
+            return null; // Unknown event type
+            
+        } catch (Exception e) {
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.warn("Error parsing event embed", e);
+            }
+            return null;
+        }
+    }
+
+    private void handleTextListCommand(org.javacord.api.event.message.MessageCreateEvent event) {
+        try {
+            if (server == null) {
+                return; // Silently ignore if server not available
+            }
+            
+            List<ServerPlayer> players = server.getPlayerList().getPlayers();
+            int onlinePlayers = players.size();
+            int maxPlayers = server.getPlayerList().getMaxPlayers();
+            
+            String serverName = Config.SERVER_NAME.get();
+            
+            sendWebhookEmbed(embed -> {
+                embed.addProperty("title", "📋 " + serverName);
+                embed.addProperty("color", 65280); // Green
+                
+                if (onlinePlayers == 0) {
+                    embed.addProperty("description", "No players online");
+                } else {
+                    String playerList = players.stream()
+                        .map(player -> player.getName().getString())
+                        .collect(Collectors.joining("\\n"));
+                    
+                    JsonArray fields = new JsonArray();
+                    JsonObject field = new JsonObject();
+                    field.addProperty("name", "Players " + onlinePlayers + "/" + maxPlayers);
+                    field.addProperty("value", playerList);
+                    field.addProperty("inline", false);
+                    fields.add(field);
+                    embed.add("fields", fields);
+                }
+                
+                JsonObject footer = new JsonObject();
+                footer.addProperty("text", "Viscord · Player List");
+                embed.add("footer", footer);
+            });
+            
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.debug("!list command executed by {}", event.getMessageAuthor().getDisplayName());
+            }
+        } catch (Exception e) {
+            Viscord.LOGGER.error("Error handling !list command", e);
         }
     }
 

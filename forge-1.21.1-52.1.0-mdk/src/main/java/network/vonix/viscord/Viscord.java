@@ -4,12 +4,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.slf4j.Logger;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +29,7 @@ public class Viscord {
     public static final String MODID = "viscord";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public Viscord(IEventBus modEventBus, ModLoadingContext modLoadingContext) {
+    public Viscord() {
         // Register ourselves for server and other game events
         MinecraftForge.EVENT_BUS.register(this);
 
@@ -39,7 +37,7 @@ public class Viscord {
         // No need to manually register it here
 
         // Register our mod's config so that FML can create and load the config file
-        modLoadingContext.registerConfig(ModConfig.Type.COMMON, Config.SPEC, "viscord-common.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "viscord-common.toml");
 
         LOGGER.info(
             "Viscord initialized - Bidirectional Discord chat mod loaded"

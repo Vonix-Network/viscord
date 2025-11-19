@@ -63,6 +63,28 @@ public class Config {
             "4. Copy ID and paste here"
         ).define("webhookId", "");
 
+    public static final ForgeConfigSpec.ConfigValue<String> EVENT_CHANNEL_ID =
+        BUILDER.comment(
+            "Discord Channel ID for event messages (join/leave/death/advancement)",
+            "Leave empty to use the default channel (discordChannelId)",
+            "How to get: Right-click the channel → Copy ID",
+            "(Enable Developer Mode in Discord settings first)"
+        ).define("eventChannelId", "");
+
+    public static final ForgeConfigSpec.ConfigValue<String> EVENT_WEBHOOK_URL =
+        BUILDER.comment(
+            "Discord Webhook URL for event messages",
+            "Leave empty to use the default webhook (webhookUrl)",
+            "How to create:",
+            "1. Right-click your Discord channel",
+            "2. Edit Channel → Integrations → Webhooks",
+            "3. New Webhook → Copy Webhook URL",
+            "4. Paste it here"
+        ).define(
+            "eventWebhookUrl",
+            ""
+        );
+
     static {
         BUILDER.pop();
     }
@@ -247,6 +269,25 @@ public class Config {
             "Settings for running multiple servers in one Discord channel."
         ).push("multiServer");
     }
+
+    public static final ForgeConfigSpec.BooleanValue SHOW_SERVER_PREFIX_IN_GAME =
+        BUILDER.comment(
+            "Show server prefix in-game for messages from other servers",
+            "Example: '[Creative]PlayerName: Hello' instead of 'PlayerName: Hello'"
+        ).define("showPrefixInGame", true);
+
+    public static final ForgeConfigSpec.BooleanValue SHOW_OTHER_SERVER_EVENTS =
+        BUILDER.comment(
+            "Show join/leave/death/advancement events from other servers in Minecraft chat",
+            "When enabled, you'll see '[Creative] PlayerName joined the server' etc.",
+            "Uses embed footer detection (Viscord · Join, Viscord · Leave, etc.)"
+        ).define("showOtherServerEvents", true);
+
+    static {
+        BUILDER.pop();
+    }
+
+    // ====================================================================
     // WEBHOOK APPEARANCE SETTINGS
     // ====================================================================
     

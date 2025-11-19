@@ -41,6 +41,28 @@ public class Config {
             "Example: 1234567890123456789"
         ).define("discordWebhookId", "");
 
+    public static final ForgeConfigSpec.ConfigValue<String> EVENT_CHANNEL_ID =
+        BUILDER.comment(
+            "Discord Channel ID for event messages (join/leave/death/advancement)",
+            "Leave empty to use the default channel (discordChannelId)",
+            "How to get: Right-click the channel → Copy ID",
+            "(Enable Developer Mode in Discord settings first)"
+        ).define("eventChannelId", "");
+
+    public static final ForgeConfigSpec.ConfigValue<String> EVENT_WEBHOOK_URL =
+        BUILDER.comment(
+            "Discord Webhook URL for event messages",
+            "Leave empty to use the default webhook (webhookUrl)",
+            "How to create:",
+            "1. Right-click your Discord channel",
+            "2. Edit Channel → Integrations → Webhooks",
+            "3. New Webhook → Copy Webhook URL",
+            "4. Paste it here"
+        ).define(
+            "eventWebhookUrl",
+            ""
+        );
+
     // Server Identity Settings
     public static final ForgeConfigSpec.ConfigValue<String> SERVER_PREFIX =
         BUILDER.comment(

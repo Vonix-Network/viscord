@@ -103,8 +103,8 @@ public class MinecraftEventHandler {
 
         Viscord.LOGGER.info("Join message sent successfully");
 
-        // Update bot status with new player count
-        DiscordManager.getInstance().updateBotStatus();
+        // Update bot status with new player count (schedule on server thread)
+        scheduleStatusUpdate(player.getServer());
     }
 
     @SubscribeEvent(priority = EventPriority.NORMAL)

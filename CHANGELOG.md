@@ -10,6 +10,12 @@
   - Affects all versions: NeoForge 1.21.1, Forge 1.21.1, and Forge 1.20.1
   - Players now consistently appear on separate lines in Discord
 
+- Fixed bot status not updating correctly on player join
+  - Player join was updating status immediately before player was added to list
+  - Now uses scheduled update (100ms delay) for both join and leave events
+  - Ensures player count is always accurate in bot status
+  - Affects all versions: NeoForge 1.21.1, Forge 1.21.1, and Forge 1.20.1
+
 ---
 
 ## Version 1.0.1

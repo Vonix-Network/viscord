@@ -335,7 +335,7 @@ public class Config {
             "Leave empty to use default Discord avatar"
         ).define(
             "avatarUrl",
-            "https://crafatar.com/avatars/{uuid}?overlay"
+            "https://mc-heads.net/head/{uuid}"
         );
 
     public static final ModConfigSpec.ConfigValue<String> SERVER_AVATAR_URL =

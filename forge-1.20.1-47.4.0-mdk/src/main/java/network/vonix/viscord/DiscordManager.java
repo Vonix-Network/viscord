@@ -875,9 +875,13 @@ public class DiscordManager {
                 if (onlinePlayers == 0) {
                     embed.addProperty("description", "No players online");
                 } else {
-                    String playerList = players.stream()
-                        .map(player -> player.getName().getString())
-                        .collect(Collectors.joining("\\n"));
+                    // Use StringBuilder for better performance and format with bullets for reliable Discord rendering
+                    StringBuilder playerListBuilder = new StringBuilder();
+                    for (int i = 0; i < players.size(); i++) {
+                        if (i > 0) playerListBuilder.append("\n");
+                        playerListBuilder.append("• ").append(players.get(i).getName().getString());
+                    }
+                    String playerList = playerListBuilder.toString();
                     
                     JsonArray fields = new JsonArray();
                     JsonObject field = new JsonObject();

@@ -45,6 +45,12 @@ Viscord is a powerful mod that bridges communication between Minecraft servers a
 | **Forge** | 1.20.1 | 47.4.0+ | 17 | ✅ Ready |
 | **Forge** | 1.21.1 | 52.1.0+ | 21 | ✅ Ready |
 
+### Dependencies
+**Required**: [Kotlin for Forge](https://www.curseforge.com/minecraft/mc-mods/kotlin-for-forge) (version 4.0+ recommended)
+- Required for OkHttp 4.x compatibility
+- Prevents version conflicts in modpacks
+- Auto-detected from environment if not bundled
+
 ## 🚀 Quick Start
 
 ### 1. Download
@@ -63,6 +69,8 @@ The compiled JAR will be in `build/libs/viscord-1.0.0.jar`
 
 ### 3. Install
 Copy the JAR to your server's `mods/` folder.
+
+**Important**: Also install [Kotlin for Forge](https://www.curseforge.com/minecraft/mc-mods/kotlin-for-forge) (version 4.0+) as a dependency.
 
 ### 4. Configure
 Start the server once to generate the config file, then edit `config/viscord-common.toml`:
@@ -254,8 +262,9 @@ Properly tuning these helps keep both Minecraft and Discord usage efficient on l
 ## 🏗️ Architecture
 
 ### Technology Stack
-- **JDA 5.0.0** / **Javacord 3.8.0** - Discord bot API
+- **Javacord 3.8.0** - Discord bot API
 - **OkHttp 4.12.0** - Webhook messaging (fast & efficient)
+- **Kotlin Stdlib** - Required by OkHttp (provided by Kotlin for Forge mod)
 - **Gson** - JSON processing (provided by Minecraft)
 - **SLF4J** - Logging (provided by Minecraft)
 

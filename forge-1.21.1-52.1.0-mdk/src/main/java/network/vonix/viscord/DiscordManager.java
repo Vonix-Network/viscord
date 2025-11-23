@@ -9,7 +9,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -813,6 +812,38 @@ public class DiscordManager {
         }
     }
     
+    /**
+     * Build a player list embed using Javacord's EmbedBuilder.
+     * Used by both /list slash command and converted for !list text command.
+     */
+    private EmbedBuilder buildPlayerListEmbed() {
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
+        int onlinePlayers = players.size();
+        int maxPlayers = server.getPlayerList().getMaxPlayers();
+        
+        String serverName = Config.SERVER_NAME.get();
+        
+        EmbedBuilder embed = new EmbedBuilder()
+            .setTitle("📋 " + serverName)
+            .setColor(Color.GREEN)
+            .setFooter("Viscord · Player List");
+        
+        if (onlinePlayers == 0) {
+            embed.setDescription("No players are currently online.");
+        } else {
+            // Build player list with bullet points for better formatting
+            StringBuilder playerListBuilder = new StringBuilder();
+            for (int i = 0; i < players.size(); i++) {
+                if (i > 0) playerListBuilder.append("\n");
+                playerListBuilder.append("• ").append(players.get(i).getName().getString());
+            }
+            
+            embed.addField("Players " + onlinePlayers + "/" + maxPlayers, playerListBuilder.toString(), false);
+        }
+        
+        return embed;
+    }
+    
     private void handleListCommand(SlashCommandInteraction interaction) {
         try {
             if (server == null) {
@@ -822,24 +853,7 @@ public class DiscordManager {
                 return;
             }
             
-            List<ServerPlayer> players = server.getPlayerList().getPlayers();
-            int onlinePlayers = players.size();
-            int maxPlayers = server.getPlayerList().getMaxPlayers();
-            
-            EmbedBuilder embed = new EmbedBuilder()
-                .setTitle("📋 Online Players")
-                .setColor(Color.GREEN)
-                .setFooter("Viscord · Player List");
-            
-            if (onlinePlayers == 0) {
-                embed.setDescription("No players are currently online.");
-            } else {
-                String playerList = players.stream()
-                    .map(player -> player.getName().getString())
-                    .collect(Collectors.joining("\n"));
-                
-                embed.addField("Players " + onlinePlayers + "/" + maxPlayers, playerList, false);
-            }
+            EmbedBuilder embed = buildPlayerListEmbed();
             
             interaction.createImmediateResponder()
                 .addEmbed(embed)
@@ -862,40 +876,11 @@ public class DiscordManager {
                 return; // Silently ignore if server not available
             }
             
-            List<ServerPlayer> players = server.getPlayerList().getPlayers();
-            int onlinePlayers = players.size();
-            int maxPlayers = server.getPlayerList().getMaxPlayers();
+            // Use the same embed builder as /list command - no duplication!
+            EmbedBuilder embed = buildPlayerListEmbed();
             
-            String serverName = Config.SERVER_NAME.get();
-            
-            sendWebhookEmbed(embed -> {
-                embed.addProperty("title", "📋 " + serverName);
-                embed.addProperty("color", 65280); // Green
-                
-                if (onlinePlayers == 0) {
-                    embed.addProperty("description", "No players online");
-                } else {
-                    // Use StringBuilder for better performance and format with bullets for reliable Discord rendering
-                    StringBuilder playerListBuilder = new StringBuilder();
-                    for (int i = 0; i < players.size(); i++) {
-                        if (i > 0) playerListBuilder.append("\n");
-                        playerListBuilder.append("• ").append(players.get(i).getName().getString());
-                    }
-                    String playerList = playerListBuilder.toString();
-                    
-                    JsonArray fields = new JsonArray();
-                    JsonObject field = new JsonObject();
-                    field.addProperty("name", "Players " + onlinePlayers + "/" + maxPlayers);
-                    field.addProperty("value", playerList);
-                    field.addProperty("inline", false);
-                    fields.add(field);
-                    embed.add("fields", fields);
-                }
-                
-                JsonObject footer = new JsonObject();
-                footer.addProperty("text", "Viscord · Player List");
-                embed.add("footer", footer);
-            });
+            // Send directly via Javacord (same as /list command)
+            event.getChannel().sendMessage(embed);
             
             if (Config.ENABLE_DEBUG_LOGGING.get()) {
                 Viscord.LOGGER.debug("!list command executed by {}", event.getMessageAuthor().getDisplayName());
@@ -909,7 +894,9 @@ public class DiscordManager {
 
     /**
      * Send an event embed using the event-specific webhook URL (or default if not configured).
+     * Note: Used by event handlers and other webhook-based features.
      */
+    @SuppressWarnings("unused") // May be used by event handlers
     private void sendEventEmbed(
         java.util.function.Consumer<JsonObject> customize
     ) {
@@ -919,7 +906,9 @@ public class DiscordManager {
 
     /**
      * Send a regular embed using the default webhook URL.
+     * Note: Retained for potential future webhook usage, though !list now uses Javacord.
      */
+    @SuppressWarnings("unused")
     private void sendWebhookEmbed(
         java.util.function.Consumer<JsonObject> customize
     ) {

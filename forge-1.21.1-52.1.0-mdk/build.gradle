@@ -145,6 +145,9 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     embed 'com.squareup.okio:okio-jvm:3.9.0'
+    
+    // Kotlin stdlib required by OkHttp 4.x (use version provided by environment/kotlinforforge)
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

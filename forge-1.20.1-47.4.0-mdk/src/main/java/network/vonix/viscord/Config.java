@@ -331,11 +331,11 @@ public class Config {
         BUILDER.comment(
             "URL template for player avatars in Discord",
             "Placeholders: {uuid}, {username}",
-            "Default uses Crafatar for Minecraft skins",
+            "Default uses Minotar for armor bust view",
             "Leave empty to use default Discord avatar"
         ).define(
             "avatarUrl",
-            "https://mc-heads.net/head/{uuid}"
+            "https://minotar.net/armor/bust/{uuid}/100.png"
         );
 
     public static final ForgeConfigSpec.ConfigValue<String> SERVER_AVATAR_URL =
@@ -404,7 +404,7 @@ public class Config {
         BUILDER.comment(
             "Enable Discord account linking system",
             "Allows players to link their Minecraft and Discord accounts"
-        ).define("enabled", true);
+        ).define("enableAccountLinking", true);
 
     public static final ForgeConfigSpec.BooleanValue SHOW_LINKED_NAMES_IN_EMBEDS =
         BUILDER.comment(
@@ -439,7 +439,7 @@ public class Config {
         BUILDER.comment(
             "Check for mod updates on server startup",
             "Fetches latest release from GitHub and notifies if update available"
-        ).define("enabled", true);
+        ).define("enableUpdateChecker", true);
 
     public static final ForgeConfigSpec.BooleanValue NOTIFY_OPS_IN_GAME =
         BUILDER.comment(

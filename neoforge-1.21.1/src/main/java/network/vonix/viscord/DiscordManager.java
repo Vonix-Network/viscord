@@ -626,9 +626,32 @@ public class DiscordManager {
         ));
     }
 
+    /**
+     * Get the player avatar URL from config with placeholder replacement
+     */
+    private String getPlayerAvatarUrl(String username) {
+        String avatarUrl = Config.WEBHOOK_AVATAR_URL.get();
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            return null;
+        }
+        
+        if (server != null) {
+            ServerPlayer player = server.getPlayerList().getPlayerByName(username);
+            if (player != null) {
+                String uuid = player.getUUID().toString().replace("-", "");
+                return avatarUrl
+                    .replace("{uuid}", uuid)
+                    .replace("{username}", username);
+            }
+        }
+        
+        // Fallback: use username only
+        return avatarUrl.replace("{username}", username);
+    }
+
     public void sendJoinEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        String thumbnailUrl = "https://mc-heads.net/head/" + username;
+        String thumbnailUrl = getPlayerAvatarUrl(username);
         sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
             "Player Joined",
             "A player joined the server.",
@@ -642,6 +665,7 @@ public class DiscordManager {
 
     public void sendLeaveEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
+        String thumbnailUrl = getPlayerAvatarUrl(username);
         sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
             "Player Left",
             "A player left the server.",
@@ -649,7 +673,7 @@ public class DiscordManager {
             username,
             serverName == null ? "Unknown" : serverName,
             "Viscord · Leave",
-            null
+            thumbnailUrl
         ));
     }
 

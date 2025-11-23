@@ -630,72 +630,55 @@ public class DiscordManager {
         });
     }
 
+    /**
+     * Get the player avatar URL from config with placeholder replacement
+     */
+    private String getPlayerAvatarUrl(String username) {
+        String avatarUrl = Config.WEBHOOK_AVATAR_URL.get();
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            return null;
+        }
+        
+        if (server != null) {
+            net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayerByName(username);
+            if (player != null) {
+                String uuid = player.getUUID().toString().replace("-", "");
+                return avatarUrl
+                    .replace("{uuid}", uuid)
+                    .replace("{username}", username);
+            }
+        }
+        
+        // Fallback: use username only
+        return avatarUrl.replace("{username}", username);
+    }
+
     public void sendJoinEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Player Joined");
-            embed.addProperty("description", "A player joined the server.");
-            embed.addProperty("color", 0x5865F2);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-
-            embed.add("fields", fields);
-
-            JsonObject thumbnail = new JsonObject();
-            thumbnail.addProperty("url", "https://mc-heads.net/head/" + username);
-            embed.add("thumbnail", thumbnail);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Join");
-            embed.add("footer", footer);
-        });
+        String thumbnailUrl = getPlayerAvatarUrl(username);
+        sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
+            "Player Joined",
+            "A player joined the server.",
+            0x5865F2,
+            username,
+            serverName == null ? "Unknown" : serverName,
+            "Viscord · Join",
+            thumbnailUrl
+        ));
     }
 
     public void sendLeaveEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Player Left");
-            embed.addProperty("description", "A player left the server.");
-            embed.addProperty("color", 0x99AAB5);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-
-            embed.add("fields", fields);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Leave");
-            embed.add("footer", footer);
-        });
+        String thumbnailUrl = getPlayerAvatarUrl(username);
+        sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
+            "Player Left",
+            "A player left the server.",
+            0x99AAB5,
+            username,
+            serverName == null ? "Unknown" : serverName,
+            "Viscord · Leave",
+            thumbnailUrl
+        ));
     }
 
     public void sendAdvancementEmbed(

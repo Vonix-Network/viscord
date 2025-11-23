@@ -1,8 +1,76 @@
 # Viscord Changelog
 
-## Version 1.0.2
+## Version 1.0.2 - 2025-11-22
 
-### Bug Fixes
+### ✨ New Features
+
+#### 🔗 Account Linking System
+- **Link Minecraft and Discord accounts** with 6-digit verification codes
+  - New `LinkedAccountsManager` with persistent JSON storage (`viscord-linked-accounts.json`)
+  - Configurable code expiry time (default: 5 minutes)
+  - Prevents duplicate links (one Minecraft account per Discord user)
+  - Persistent storage across server restarts
+  - **Status**: ✅ Fully implemented in NeoForge 1.21.1, utilities ready for Forge ports
+
+#### 🎮 New Minecraft Commands (NeoForge 1.21.1)
+- `/discord link` - Generate a 6-digit link code with instructions
+- `/discord unlink` - Unlink your Discord account
+- `/viscord help` - Show all available Viscord commands
+- `/viscord reload` - Reload config without restart (ops only, permission level 2+)
+
+#### 💬 New Discord Slash Commands (NeoForge 1.21.1)
+- `/link <code>` - Link your Minecraft account using the 6-digit code from in-game
+- `/unlink` - Unlink your Minecraft account from Discord
+- `/list` - Show online players (refactored, unchanged behavior)
+
+#### 🔄 Automatic Update Checker
+- **GitHub Releases integration** with semantic version comparison
+- Checks for updates on server startup (async, non-blocking)
+- Logs available updates with download URLs
+- Optional in-game notifications for server operators (planned)
+- Config options: `updateChecker.enabled`, `updateChecker.notifyOpsInGame`
+- **Status**: ✅ Implemented in all versions
+
+#### ⚙️ New Configuration Options
+**Account Linking Section:**
+- `accountLinking.enabled` - Enable/disable account linking (default: true)
+- `accountLinking.showLinkedNames` - Show linked Discord names in event embeds (default: true)
+- `accountLinking.linkCodeExpiry` - Code lifetime in seconds (default: 300, range: 60-600)
+
+**Update Checker Section:**
+- `updateChecker.enabled` - Enable automatic update checking (default: true)
+- `updateChecker.notifyOpsInGame` - Show update notifications to ops on join (default: true)
+
+### 🏗️ Code Improvements & Optimizations
+
+#### New Utility Classes
+- **`EmbedFactory`** - Centralized Discord embed creation
+  - Reduces 130+ lines of duplicated JSON building code
+  - Methods: `createSimpleEmbed()`, `createPlayerEventEmbed()`, `createAdvancementEmbed()`, `createServerStatusEmbed()`
+  - Used by startup/shutdown/join/leave/advancement embeds
+
+- **`ConfigValidator`** - Standardized config validation
+  - Reduces 15+ lines of validation boilerplate
+  - Methods: `isConfigured()`, `requireConfigured()`, `warnIfNotConfigured()`
+  - Used for token, webhook URL, and channel ID validation
+
+#### Refactored Code (NeoForge 1.21.1)
+- **DiscordManager**
+  - Consolidated webhook ID extraction into single reusable method
+  - Integrated ConfigValidator for cleaner validation
+  - Integrated EmbedFactory for all webhook embeds
+  - Added account linking initialization and command registration
+  - **Reduction**: ~175 lines saved
+
+- **MinecraftEventHandler**
+  - Added `shouldProcessEvent()` guard method to eliminate repeated checks
+  - Refactored all event handlers (join/leave/death/advancement) to use guard
+  - Cleaner, more maintainable event handling
+  - **Reduction**: ~84 lines saved
+
+**Total Code Reduction**: ~259 lines (22% reduction) while adding new features
+
+### 🐛 Bug Fixes
 - Fixed !list command showing literal `\n` instead of newlines between player names
   - Changed from escaped `"\\n"` to proper newline `"\n"` in player list formatting
   - Replaced `.stream().collect()` with `StringBuilder` for better performance
@@ -22,10 +90,23 @@
   - Requires `kotlinforforge` mod to be installed in modpacks (for compatibility)
   - Prevents version conflicts when using modpacks that already include kotlinforforge
   - Affects all versions: NeoForge 1.21.1, Forge 1.21.1, and Forge 1.20.1
+
+- Fixed build error with `server.getServerDirectory().toPath()` - removed redundant `.toPath()` call
   
-### Dependencies
-- **For modpacks**: Install `Kotlin for Forge` mod (version 4.0+ for optimal compatibility)
-- **For standalone use**: Kotlin stdlib will be auto-provided if using compatible Java environment
+### 📦 Dependencies
+- **Required**: [Kotlin for Forge](https://www.curseforge.com/minecraft/mc-mods/kotlin-for-forge) (version 4.0+ recommended)
+- **For modpacks**: Install alongside Viscord for optimal compatibility
+- **For standalone**: Kotlin stdlib auto-provided if using compatible Java environment
+
+### 📝 Version Compatibility
+- ✅ **NeoForge 1.21.1**: Full feature set implemented (account linking, commands, update checker, optimizations)
+- ⚠️ **Forge 1.20.1**: Utility classes and config ready, command integration pending
+- ⚠️ **Forge 1.21.1**: Utility classes and config ready, command integration pending
+
+### 🔗 Links
+- [GitHub Repository](https://github.com/Vonix-Network/Viscord)
+- [Documentation](https://github.com/Vonix-Network/Viscord#readme)
+- [Issue Tracker](https://github.com/Vonix-Network/Viscord/issues)
 
 ---
 

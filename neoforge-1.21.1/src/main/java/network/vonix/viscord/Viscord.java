@@ -68,6 +68,19 @@ public class Viscord {
             LOGGER.info("Server: {}", Config.SERVER_NAME.get());
             LOGGER.info("Prefix: {}", Config.SERVER_PREFIX.get());
             LOGGER.info("Channel ID: {}", Config.DISCORD_CHANNEL_ID.get());
+            
+            // Check for updates
+            if (Config.ENABLE_UPDATE_CHECKER.get()) {
+                UpdateChecker.checkForUpdates().thenAccept(result -> {
+                    if (result.updateAvailable) {
+                        LOGGER.warn("===============================================");
+                        LOGGER.warn("UPDATE AVAILABLE: Viscord {} -> {}", 
+                            UpdateChecker.getCurrentVersion(), result.latestVersion);
+                        LOGGER.warn("Download: {}", result.downloadUrl);
+                        LOGGER.warn("===============================================");
+                    }
+                });
+            }
         } catch (Exception e) {
             LOGGER.error("Failed to start Discord integration", e);
         }

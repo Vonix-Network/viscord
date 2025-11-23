@@ -42,6 +42,7 @@ public class DiscordManager {
     private String ourWebhookId = null; // Extracted from webhook URL for precise filtering
     private String eventWebhookId = null; // Extracted from event webhook URL for precise filtering
     private DiscordApi discordApi = null; // Javacord API for bot status and commands
+    private LinkedAccountsManager linkedAccountsManager = null; // Account linking system
 
     // Simple Markdown-style link pattern: [text](https://url)
     private static final Pattern DISCORD_MARKDOWN_LINK =
@@ -69,14 +70,7 @@ public class DiscordManager {
         this.server = server;
         String token = Config.DISCORD_BOT_TOKEN.get();
 
-        if (
-            token == null ||
-            token.isEmpty() ||
-            token.equals("YOUR_BOT_TOKEN_HERE")
-        ) {
-            Viscord.LOGGER.error(
-                "Discord bot token not configured! Please set it in the config file."
-            );
+        if (!ConfigValidator.requireConfigured(token, "YOUR_BOT_TOKEN_HERE", "Discord bot token")) {
             return;
         }
 
@@ -166,6 +160,27 @@ public class DiscordManager {
     public boolean isRunning() {
         return running;
     }
+    
+    // ========= Account Linking =========
+    
+    public String generateLinkCode(net.minecraft.server.level.ServerPlayer player) {
+        if (linkedAccountsManager == null || !Config.ENABLE_ACCOUNT_LINKING.get()) {
+            return null;
+        }
+        return linkedAccountsManager.generateLinkCode(player.getUUID(), player.getName().getString());
+    }
+    
+    public boolean unlinkAccount(java.util.UUID uuid) {
+        if (linkedAccountsManager == null || !Config.ENABLE_ACCOUNT_LINKING.get()) {
+            return false;
+        }
+        return linkedAccountsManager.unlinkMinecraft(uuid);
+    }
+    
+    public void reloadConfig() {
+        Viscord.LOGGER.info("Config reload requested (some changes require restart)");
+        // Config auto-reloads from file on next access in Forge/NeoForge
+    }
 
     /**
      * Extract webhook IDs from config or webhook URLs.
@@ -173,39 +188,36 @@ public class DiscordManager {
      * Webhook URL format: https://discord.com/api/webhooks/{id}/{token}
      */
     private void extractWebhookId() {
-        // Extract chat webhook ID
-        String manualId = Config.DISCORD_WEBHOOK_ID.get();
+        ourWebhookId = extractWebhookIdFromConfig(
+            Config.DISCORD_WEBHOOK_ID.get(),
+            Config.DISCORD_WEBHOOK_URL.get(),
+            "chat"
+        );
+        eventWebhookId = extractWebhookIdFromConfig(
+            Config.EVENT_WEBHOOK_ID.get(),
+            Config.EVENT_WEBHOOK_URL.get(),
+            "event"
+        );
+    }
+    
+    private String extractWebhookIdFromConfig(String manualId, String webhookUrl, String type) {
         if (manualId != null && !manualId.isEmpty()) {
-            ourWebhookId = manualId;
-            Viscord.LOGGER.info("Using manually configured chat webhook ID: {}", ourWebhookId);
-        } else {
-            String webhookUrl = Config.DISCORD_WEBHOOK_URL.get();
-            if (webhookUrl != null && !webhookUrl.isEmpty() && !webhookUrl.contains("YOUR_WEBHOOK_URL")) {
-                ourWebhookId = extractIdFromWebhookUrl(webhookUrl);
-                if (ourWebhookId != null) {
-                    Viscord.LOGGER.info("Auto-extracted chat webhook ID from URL: {}", ourWebhookId);
-                }
-            }
+            Viscord.LOGGER.info("Using manually configured {} webhook ID: {}", type, manualId);
+            return manualId;
         }
         
-        // Extract event webhook ID
-        String manualEventId = Config.EVENT_WEBHOOK_ID.get();
-        if (manualEventId != null && !manualEventId.isEmpty()) {
-            eventWebhookId = manualEventId;
-            Viscord.LOGGER.info("Using manually configured event webhook ID: {}", eventWebhookId);
-        } else {
-            String eventWebhookUrl = Config.EVENT_WEBHOOK_URL.get();
-            if (eventWebhookUrl != null && !eventWebhookUrl.isEmpty() && !eventWebhookUrl.contains("YOUR_WEBHOOK_URL")) {
-                eventWebhookId = extractIdFromWebhookUrl(eventWebhookUrl);
-                if (eventWebhookId != null) {
-                    Viscord.LOGGER.info("Auto-extracted event webhook ID from URL: {}", eventWebhookId);
-                }
+        if (ConfigValidator.isConfigured(webhookUrl, "YOUR_WEBHOOK_URL")) {
+            String id = extractIdFromWebhookUrl(webhookUrl);
+            if (id != null) {
+                Viscord.LOGGER.info("Auto-extracted {} webhook ID from URL: {}", type, id);
             }
+            return id;
         }
         
-        if (ourWebhookId == null) {
-            Viscord.LOGGER.warn("Chat webhook ID not configured. Webhook ID filtering may not work properly.");
+        if (type.equals("chat")) {
+            Viscord.LOGGER.warn("Chat webhook ID not configured. Filtering may not work properly.");
         }
+        return null;
     }
     
     /**
@@ -287,8 +299,23 @@ public class DiscordManager {
                 }
             }
             
+            // Initialize account linking manager
+            if (Config.ENABLE_ACCOUNT_LINKING.get()) {
+                try {
+                    linkedAccountsManager = new LinkedAccountsManager(server.getServerDirectory().resolve("config"));
+                    Viscord.LOGGER.info("Account linking system initialized ({} accounts linked)", linkedAccountsManager.getLinkedCount());
+                } catch (Exception e) {
+                    Viscord.LOGGER.error("Failed to initialize account linking", e);
+                }
+            }
+            
             // Register /list slash command
             registerListCommand();
+            
+            // Register account linking slash commands
+            if (Config.ENABLE_ACCOUNT_LINKING.get() && linkedAccountsManager != null) {
+                registerLinkCommands();
+            }
             
             // Set initial bot status
             updateBotStatus();
@@ -502,12 +529,7 @@ public class DiscordManager {
         }
 
         String webhookUrl = Config.DISCORD_WEBHOOK_URL.get();
-        if (
-            webhookUrl == null ||
-            webhookUrl.isEmpty() ||
-            webhookUrl.contains("YOUR_WEBHOOK_URL")
-        ) {
-            Viscord.LOGGER.warn("Discord webhook URL not configured!");
+        if (!ConfigValidator.warnIfNotConfigured(webhookUrl, "YOUR_WEBHOOK_URL", "Discord webhook URL")) {
             return;
         }
 
@@ -585,117 +607,50 @@ public class DiscordManager {
     }
 
     public void sendStartupEmbed(String serverName) {
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Server Online");
-            embed.addProperty("description", "The server is now online.");
-            embed.addProperty("color", 0x43B581);
-
-            JsonArray fields = new JsonArray();
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-            embed.add("fields", fields);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Startup");
-            embed.add("footer", footer);
-        });
+        sendEventEmbed(EmbedFactory.createServerStatusEmbed(
+            "Server Online",
+            "The server is now online.",
+            0x43B581,
+            serverName,
+            "Viscord · Startup"
+        ));
     }
 
     public void sendShutdownEmbed(String serverName) {
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Server Shutting Down");
-            embed.addProperty("description", "The server is shutting down...");
-            embed.addProperty("color", 0xF04747);
-
-            JsonArray fields = new JsonArray();
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-            embed.add("fields", fields);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Shutdown");
-            embed.add("footer", footer);
-        });
+        sendEventEmbed(EmbedFactory.createServerStatusEmbed(
+            "Server Shutting Down",
+            "The server is shutting down...",
+            0xF04747,
+            serverName,
+            "Viscord · Shutdown"
+        ));
     }
 
     public void sendJoinEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Player Joined");
-            embed.addProperty("description", "A player joined the server.");
-            embed.addProperty("color", 0x5865F2);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-
-            embed.add("fields", fields);
-
-            JsonObject thumbnail = new JsonObject();
-            thumbnail.addProperty("url", "https://mc-heads.net/head/" + username);
-            embed.add("thumbnail", thumbnail);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Join");
-            embed.add("footer", footer);
-        });
+        String thumbnailUrl = "https://mc-heads.net/head/" + username;
+        sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
+            "Player Joined",
+            "A player joined the server.",
+            0x5865F2,
+            username,
+            serverName == null ? "Unknown" : serverName,
+            "Viscord · Join",
+            thumbnailUrl
+        ));
     }
 
     public void sendLeaveEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Player Left");
-            embed.addProperty("description", "A player left the server.");
-            embed.addProperty("color", 0x99AAB5);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-
-            embed.add("fields", fields);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Leave");
-            embed.add("footer", footer);
-        });
+        sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
+            "Player Left",
+            "A player left the server.",
+            0x99AAB5,
+            username,
+            serverName == null ? "Unknown" : serverName,
+            "Viscord · Leave",
+            null
+        ));
     }
 
     public void sendAdvancementEmbed(
@@ -717,45 +672,13 @@ public class DiscordManager {
             colorInt = 0x43B581;
         }
 
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", emoji + " Advancement Made");
-            embed.addProperty(
-                "description",
-                "A player has completed an advancement."
-            );
-            embed.addProperty("color", colorInt);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject titleField = new JsonObject();
-            titleField.addProperty("name", "Title");
-            titleField.addProperty("value", advancementTitle);
-            titleField.addProperty("inline", true);
-            fields.add(titleField);
-
-            JsonObject descField = new JsonObject();
-            descField.addProperty("name", "Description");
-            descField.addProperty(
-                "value",
-                advancementDescription == null || advancementDescription.isBlank()
-                    ? "—"
-                    : advancementDescription
-            );
-            descField.addProperty("inline", false);
-            fields.add(descField);
-
-            embed.add("fields", fields);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Advancement");
-            embed.add("footer", footer);
-        });
+        sendEventEmbed(EmbedFactory.createAdvancementEmbed(
+            emoji,
+            colorInt,
+            username,
+            advancementTitle,
+            advancementDescription
+        ));
     }
 
     public void updateBotStatus() {
@@ -887,6 +810,70 @@ public class DiscordManager {
             }
         } catch (Exception e) {
             Viscord.LOGGER.error("Error handling !list command", e);
+        }
+    }
+    
+    private void registerLinkCommands() {
+        if (discordApi == null || linkedAccountsManager == null) {
+            return;
+        }
+        
+        try {
+            // Register /link <code> command
+            SlashCommand.with("link", "Link your Minecraft account to Discord",
+                java.util.Arrays.asList(
+                    org.javacord.api.interaction.SlashCommandOption.create(
+                        org.javacord.api.interaction.SlashCommandOptionType.STRING,
+                        "code",
+                        "The 6-digit code from /discord link in-game",
+                        true
+                    )
+                )
+            ).createGlobal(discordApi).join();
+            
+            // Register /unlink command
+            SlashCommand.with("unlink", "Unlink your Discord account from Minecraft")
+                .createGlobal(discordApi).join();
+            
+            Viscord.LOGGER.info("Registered /link and /unlink slash commands");
+            
+            // Add listener for link command
+            discordApi.addSlashCommandCreateListener(event -> {
+                SlashCommandInteraction interaction = event.getSlashCommandInteraction();
+                
+                if (interaction.getCommandName().equals("link")) {
+                    String code = interaction.getArgumentStringValueByName("code").orElse("");
+                    String discordId = String.valueOf(interaction.getUser().getId());
+                    String discordUsername = interaction.getUser().getName();
+                    
+                    LinkedAccountsManager.LinkResult result = linkedAccountsManager.verifyAndLink(code, discordId, discordUsername);
+                    
+                    if (result.success) {
+                        interaction.createImmediateResponder()
+                            .setContent("✅ " + result.message)
+                            .respond();
+                    } else {
+                        interaction.createImmediateResponder()
+                            .setContent("❌ " + result.message)
+                            .respond();
+                    }
+                } else if (interaction.getCommandName().equals("unlink")) {
+                    String discordId = String.valueOf(interaction.getUser().getId());
+                    boolean success = linkedAccountsManager.unlinkDiscord(discordId);
+                    
+                    if (success) {
+                        interaction.createImmediateResponder()
+                            .setContent("✅ Your Minecraft account has been unlinked.")
+                            .respond();
+                    } else {
+                        interaction.createImmediateResponder()
+                            .setContent("❌ You don't have a linked Minecraft account.")
+                            .respond();
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Viscord.LOGGER.error("Error registering link commands", e);
         }
     }
 

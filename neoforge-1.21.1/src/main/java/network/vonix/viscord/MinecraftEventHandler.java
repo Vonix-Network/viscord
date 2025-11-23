@@ -25,6 +25,7 @@ public class MinecraftEventHandler {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
+        // /discord command with subcommands
         dispatcher.register(
             Commands.literal("discord")
                 .requires(source -> source.hasPermission(0))
@@ -53,6 +54,85 @@ public class MinecraftEventHandler {
                     }
                     return 1;
                 })
+                .then(Commands.literal("link")
+                    .executes(context -> {
+                        if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
+                            context.getSource().sendFailure(Component.literal("§cAccount linking is disabled."));
+                            return 0;
+                        }
+                        
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        String code = DiscordManager.getInstance().generateLinkCode(player);
+                        
+                        if (code != null) {
+                            context.getSource().sendSuccess(() -> Component.literal(
+                                "§aYour link code is: §e" + code + "\n" +
+                                "§7Use §b/link " + code + "§7 in Discord to link your account.\n" +
+                                "§7Code expires in " + (Config.LINK_CODE_EXPIRY_SECONDS.get() / 60) + " minutes."
+                            ), false);
+                            return 1;
+                        } else {
+                            context.getSource().sendFailure(Component.literal("§cFailed to generate link code."));
+                            return 0;
+                        }
+                    })
+                )
+                .then(Commands.literal("unlink")
+                    .executes(context -> {
+                        if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
+                            context.getSource().sendFailure(Component.literal("§cAccount linking is disabled."));
+                            return 0;
+                        }
+                        
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        boolean success = DiscordManager.getInstance().unlinkAccount(player.getUUID());
+                        
+                        if (success) {
+                            context.getSource().sendSuccess(() -> Component.literal(
+                                "§aYour Discord account has been unlinked."
+                            ), false);
+                            return 1;
+                        } else {
+                            context.getSource().sendFailure(Component.literal("§cYou don't have a linked Discord account."));
+                            return 0;
+                        }
+                    })
+                )
+        );
+        
+        // /viscord command for admin functions
+        dispatcher.register(
+            Commands.literal("viscord")
+                .then(Commands.literal("help")
+                    .executes(context -> {
+                        context.getSource().sendSuccess(() -> Component.literal(
+                            "§6§l=== Viscord Commands ===\n" +
+                            "§b/discord§7 - Show Discord invite link\n" +
+                            "§b/discord link§7 - Generate account link code\n" +
+                            "§b/discord unlink§7 - Unlink your Discord account\n" +
+                            "§b/viscord help§7 - Show this help message\n" +
+                            "§b/viscord reload§7 - Reload config (requires op)\n" +
+                            "§7Discord: §b/list§7 - Show online players"
+                        ), false);
+                        return 1;
+                    })
+                )
+                .then(Commands.literal("reload")
+                    .requires(source -> source.hasPermission(2))
+                    .executes(context -> {
+                        context.getSource().sendSuccess(() -> Component.literal(
+                            "§eReloading Viscord configuration..."
+                        ), false);
+                        
+                        // Reload config (it auto-reloads from file on next access)
+                        DiscordManager.getInstance().reloadConfig();
+                        
+                        context.getSource().sendSuccess(() -> Component.literal(
+                            "§aViscord configuration reloaded! Restart may be required for some changes."
+                        ), false);
+                        return 1;
+                    })
+                )
         );
     }
 
@@ -76,67 +156,35 @@ public class MinecraftEventHandler {
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        Viscord.LOGGER.info("PlayerJoin event triggered");
-
-        if (!DiscordManager.getInstance().isRunning()) {
-            Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping join message"
-            );
-            return;
-        }
-
-        if (!Config.SEND_JOIN_MESSAGES.get()) {
-            Viscord.LOGGER.info("Join messages disabled in config");
+        if (!shouldProcessEvent("Join", Config.SEND_JOIN_MESSAGES.get())) {
             return;
         }
 
         ServerPlayer player = (ServerPlayer) event.getEntity();
         String username = player.getName().getString();
-
-        Viscord.LOGGER.info("Sending join message for player: {}", username);
 
         if (Config.ENABLE_DEBUG_LOGGING.get()) {
             Viscord.LOGGER.debug("Player joined: {}", username);
         }
 
         DiscordManager.getInstance().sendJoinEmbed(username);
-
-        Viscord.LOGGER.info("Join message sent successfully");
-
-        // Update bot status with new player count (schedule on server thread)
         scheduleStatusUpdate(player.getServer());
     }
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
-        Viscord.LOGGER.info("PlayerLeave event triggered");
-
-        if (!DiscordManager.getInstance().isRunning()) {
-            Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping leave message"
-            );
-            return;
-        }
-
-        if (!Config.SEND_LEAVE_MESSAGES.get()) {
-            Viscord.LOGGER.info("Leave messages disabled in config");
+        if (!shouldProcessEvent("Leave", Config.SEND_LEAVE_MESSAGES.get())) {
             return;
         }
 
         ServerPlayer player = (ServerPlayer) event.getEntity();
         String username = player.getName().getString();
 
-        Viscord.LOGGER.info("Sending leave message for player: {}", username);
-
         if (Config.ENABLE_DEBUG_LOGGING.get()) {
             Viscord.LOGGER.debug("Player left: {}", username);
         }
 
         DiscordManager.getInstance().sendLeaveEmbed(username);
-
-        Viscord.LOGGER.info("Leave message sent successfully");
-
-        // Update bot status with new player count (schedule on server thread)
         scheduleStatusUpdate(player.getServer());
     }
 
@@ -146,20 +194,7 @@ public class MinecraftEventHandler {
             return;
         }
 
-        Viscord.LOGGER.info(
-            "PlayerDeath event triggered for: {}",
-            player.getName().getString()
-        );
-
-        if (!DiscordManager.getInstance().isRunning()) {
-            Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping death message"
-            );
-            return;
-        }
-
-        if (!Config.SEND_DEATH_MESSAGES.get()) {
-            Viscord.LOGGER.info("Death messages disabled in config");
+        if (!shouldProcessEvent("Death", Config.SEND_DEATH_MESSAGES.get())) {
             return;
         }
 
@@ -168,39 +203,23 @@ public class MinecraftEventHandler {
             .getLocalizedDeathMessage(player)
             .getString();
 
-        Viscord.LOGGER.info("Sending death message: {}", deathMessage);
-
         if (Config.ENABLE_DEBUG_LOGGING.get()) {
             Viscord.LOGGER.debug("Player death: {}", deathMessage);
         }
 
         DiscordManager.getInstance().sendSystemMessage("💀 " + deathMessage);
-        Viscord.LOGGER.info("Death message sent successfully");
     }
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onAdvancement(
         AdvancementEvent.AdvancementEarnEvent event
     ) {
+        if (!shouldProcessEvent("Advancement", Config.SEND_ADVANCEMENT_MESSAGES.get())) {
+            return;
+        }
+
         ServerPlayer player = (ServerPlayer) event.getEntity();
         AdvancementHolder advancement = event.getAdvancement();
-
-        Viscord.LOGGER.info(
-            "Advancement event triggered for: {}",
-            player.getName().getString()
-        );
-
-        if (!DiscordManager.getInstance().isRunning()) {
-            Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping advancement message"
-            );
-            return;
-        }
-
-        if (!Config.SEND_ADVANCEMENT_MESSAGES.get()) {
-            Viscord.LOGGER.info("Advancement messages disabled in config");
-            return;
-        }
 
         // Only announce advancements that should be announced (not recipes, etc.)
         if (advancement.value().display().isEmpty()) {
@@ -220,12 +239,6 @@ public class MinecraftEventHandler {
         String advancementTitle = display.getTitle().getString();
         String advancementDescription = display.getDescription().getString();
 
-        Viscord.LOGGER.info(
-            "Sending advancement message for: {} - {}",
-            username,
-            advancementTitle
-        );
-
         if (Config.ENABLE_DEBUG_LOGGING.get()) {
             Viscord.LOGGER.debug(
                 "Player advancement: {} - {}",
@@ -240,8 +253,31 @@ public class MinecraftEventHandler {
             advancementDescription,
             display.getType().name()
         );
+    }
 
-        Viscord.LOGGER.info("Advancement message sent successfully");
+    /**
+     * Guard method to check if an event should be processed.
+     * Reduces boilerplate in event handlers.
+     */
+    private static boolean shouldProcessEvent(String eventName, boolean configEnabled) {
+        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+            Viscord.LOGGER.debug("{} event triggered", eventName);
+        }
+        
+        if (!DiscordManager.getInstance().isRunning()) {
+            Viscord.LOGGER.warn(
+                "DiscordManager not running, skipping {} message",
+                eventName
+            );
+            return false;
+        }
+        
+        if (!configEnabled) {
+            Viscord.LOGGER.info("{} messages disabled in config", eventName);
+            return false;
+        }
+        
+        return true;
     }
 
     private static void scheduleStatusUpdate(net.minecraft.server.MinecraftServer server) {

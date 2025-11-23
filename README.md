@@ -65,7 +65,7 @@ cd <version-directory>
 gradlew build
 ```
 
-The compiled JAR will be in `build/libs/viscord-1.0.0.jar`
+The compiled JAR will be in `build/libs/viscord-1.0.2.jar`
 
 ### 3. Install
 Copy the JAR to your server's `mods/` folder.

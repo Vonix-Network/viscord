@@ -400,19 +400,19 @@ public class Config {
         ).push("accountLinking");
     }
 
-    public static final ModConfigSpec.BooleanValue ENABLE_ACCOUNT_LINKING =
+    public static final ForgeConfigSpec.BooleanValue ENABLE_ACCOUNT_LINKING =
         BUILDER.comment(
             "Enable Discord account linking system",
             "Allows players to link their Minecraft and Discord accounts"
         ).define("enabled", true);
 
-    public static final ModConfigSpec.BooleanValue SHOW_LINKED_NAMES_IN_EMBEDS =
+    public static final ForgeConfigSpec.BooleanValue SHOW_LINKED_NAMES_IN_EMBEDS =
         BUILDER.comment(
             "Show linked Discord names in event embeds (join/leave/death)",
             "Example: 'PlayerName (Discord: @User) joined the game'"
         ).define("showLinkedNames", true);
 
-    public static final ModConfigSpec.IntValue LINK_CODE_EXPIRY_SECONDS =
+    public static final ForgeConfigSpec.IntValue LINK_CODE_EXPIRY_SECONDS =
         BUILDER.comment(
             "How long link codes are valid (in seconds)",
             "Range: 60-600 seconds (1-10 minutes), Default: 300 (5 minutes)"
@@ -435,13 +435,13 @@ public class Config {
         ).push("updateChecker");
     }
 
-    public static final ModConfigSpec.BooleanValue ENABLE_UPDATE_CHECKER =
+    public static final ForgeConfigSpec.BooleanValue ENABLE_UPDATE_CHECKER =
         BUILDER.comment(
             "Check for mod updates on server startup",
             "Fetches latest release from GitHub and notifies if update available"
         ).define("enabled", true);
 
-    public static final ModConfigSpec.BooleanValue NOTIFY_OPS_IN_GAME =
+    public static final ForgeConfigSpec.BooleanValue NOTIFY_OPS_IN_GAME =
         BUILDER.comment(
             "Send update notifications to ops when they join",
             "Shows in-game message if update is available"

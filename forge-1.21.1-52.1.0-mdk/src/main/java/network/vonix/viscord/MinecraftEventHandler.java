@@ -25,6 +25,7 @@ public class MinecraftEventHandler {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
 
+        // /discord command with subcommands
         dispatcher.register(
             Commands.literal("discord")
                 .requires(source -> source.hasPermission(0))
@@ -53,6 +54,85 @@ public class MinecraftEventHandler {
                     }
                     return 1;
                 })
+                .then(Commands.literal("link")
+                    .executes(context -> {
+                        if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
+                            context.getSource().sendFailure(Component.literal("§cAccount linking is disabled."));
+                            return 0;
+                        }
+                        
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        String code = DiscordManager.getInstance().generateLinkCode(player);
+                        
+                        if (code != null) {
+                            context.getSource().sendSuccess(() -> Component.literal(
+                                "§aYour link code is: §e" + code + "\n" +
+                                "§7Use §b/link " + code + "§7 in Discord to link your account.\n" +
+                                "§7Code expires in " + (Config.LINK_CODE_EXPIRY_SECONDS.get() / 60) + " minutes."
+                            ), false);
+                            return 1;
+                        } else {
+                            context.getSource().sendFailure(Component.literal("§cFailed to generate link code."));
+                            return 0;
+                        }
+                    })
+                )
+                .then(Commands.literal("unlink")
+                    .executes(context -> {
+                        if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
+                            context.getSource().sendFailure(Component.literal("§cAccount linking is disabled."));
+                            return 0;
+                        }
+                        
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        boolean success = DiscordManager.getInstance().unlinkAccount(player.getUUID());
+                        
+                        if (success) {
+                            context.getSource().sendSuccess(() -> Component.literal(
+                                "§aYour Discord account has been unlinked."
+                            ), false);
+                            return 1;
+                        } else {
+                            context.getSource().sendFailure(Component.literal("§cYou don't have a linked Discord account."));
+                            return 0;
+                        }
+                    })
+                )
+        );
+        
+        // /viscord command for admin functions
+        dispatcher.register(
+            Commands.literal("viscord")
+                .then(Commands.literal("help")
+                    .executes(context -> {
+                        context.getSource().sendSuccess(() -> Component.literal(
+                            "§6§l=== Viscord Commands ===\n" +
+                            "§b/discord§7 - Show Discord invite link\n" +
+                            "§b/discord link§7 - Generate account link code\n" +
+                            "§b/discord unlink§7 - Unlink your Discord account\n" +
+                            "§b/viscord help§7 - Show this help message\n" +
+                            "§b/viscord reload§7 - Reload config (requires op)\n" +
+                            "§7Discord: §b/list§7 - Show online players"
+                        ), false);
+                        return 1;
+                    })
+                )
+                .then(Commands.literal("reload")
+                    .requires(source -> source.hasPermission(2))
+                    .executes(context -> {
+                        context.getSource().sendSuccess(() -> Component.literal(
+                            "§eReloading Viscord configuration..."
+                        ), false);
+                        
+                        // Reload config (it auto-reloads from file on next access)
+                        DiscordManager.getInstance().reloadConfig();
+                        
+                        context.getSource().sendSuccess(() -> Component.literal(
+                            "§aViscord configuration reloaded! Restart may be required for some changes."
+                        ), false);
+                        return 1;
+                    })
+                )
         );
     }
 

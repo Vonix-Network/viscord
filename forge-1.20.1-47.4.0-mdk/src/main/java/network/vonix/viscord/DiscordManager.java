@@ -42,6 +42,7 @@ public class DiscordManager {
     private String ourWebhookId = null; // Extracted from webhook URL for precise filtering
     private String eventWebhookId = null; // Extracted from event webhook URL for precise filtering
     private DiscordApi discordApi = null; // Javacord API for bot status and commands
+    private LinkedAccountsManager linkedAccountsManager = null; // Account linking system
 
     // Simple Markdown-style link pattern: [text](https://url)
     private static final Pattern DISCORD_MARKDOWN_LINK =
@@ -165,6 +166,54 @@ public class DiscordManager {
 
     public boolean isRunning() {
         return running;
+    }
+    
+    // ========= Account Linking =========
+    
+    public String generateLinkCode(net.minecraft.server.level.ServerPlayer player) {
+        if (linkedAccountsManager == null || !Config.ENABLE_ACCOUNT_LINKING.get()) {
+            return null;
+        }
+        return linkedAccountsManager.generateLinkCode(player.getUUID(), player.getName().getString());
+    }
+    
+    public boolean unlinkAccount(java.util.UUID uuid) {
+        if (linkedAccountsManager == null || !Config.ENABLE_ACCOUNT_LINKING.get()) {
+            return false;
+        }
+        return linkedAccountsManager.unlinkMinecraft(uuid);
+    }
+    
+    public void reloadConfig() {
+        Viscord.LOGGER.info("Reloading Viscord configuration...");
+        
+        // Config values auto-reload from file on next access in Forge/NeoForge
+        // We need to re-extract webhook IDs and update runtime state
+        
+        // Re-extract webhook IDs from potentially updated config
+        extractWebhookId();
+        Viscord.LOGGER.info("Webhook IDs refreshed from config");
+        
+        // Update bot status with new settings
+        if (discordApi != null && running) {
+            updateBotStatus();
+            Viscord.LOGGER.info("Bot status updated");
+        }
+        
+        // Reinitialize account linking if settings changed
+        if (Config.ENABLE_ACCOUNT_LINKING.get() && linkedAccountsManager == null) {
+            try {
+                linkedAccountsManager = new LinkedAccountsManager(server.getServerDirectory().toPath().resolve("config"));
+                Viscord.LOGGER.info("Account linking enabled and initialized");
+            } catch (Exception e) {
+                Viscord.LOGGER.error("Failed to initialize account linking", e);
+            }
+        } else if (!Config.ENABLE_ACCOUNT_LINKING.get() && linkedAccountsManager != null) {
+            linkedAccountsManager = null;
+            Viscord.LOGGER.info("Account linking disabled");
+        }
+        
+        Viscord.LOGGER.info("Config reload complete! Note: Bot token, channel IDs, and some features require a full restart");
     }
 
     /**
@@ -290,6 +339,16 @@ public class DiscordManager {
             // Register /list slash command
             registerListCommand();
             
+            // Initialize account linking manager
+            if (Config.ENABLE_ACCOUNT_LINKING.get()) {
+                try {
+                    linkedAccountsManager = new LinkedAccountsManager(server.getServerDirectory().toPath().resolve("config"));
+                    Viscord.LOGGER.info("Account linking system initialized ({} accounts linked)", linkedAccountsManager.getLinkedCount());
+                } catch (Exception e) {
+                    Viscord.LOGGER.error("Failed to initialize account linking", e);
+                }
+            }
+            
             // Set initial bot status
             updateBotStatus();
             
@@ -312,21 +371,25 @@ public class DiscordManager {
                 return;
             }
 
-            // Always log received messages to diagnose filtering
-            Viscord.LOGGER.info("Received Discord message from '{}': '{}' [isBot={}, isWebhook={}]", 
-                authorName, content, isBot, isWebhook);
+            // Debug logging for message filtering
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.info("Received Discord message from '{}': '{}' [isBot={}, isWebhook={}]", 
+                    authorName, content, isBot, isWebhook);
 
-            // Detailed webhook info logging
-            if (isWebhook) {
-                long authorId = event.getMessageAuthor().getId();
-                Viscord.LOGGER.info("  → Webhook details: author.id={}, chat={}, event={}", 
-                    authorId, ourWebhookId, eventWebhookId);
-                Viscord.LOGGER.info("  → Config: IGNORE_WEBHOOKS={}, FILTER_BY_PREFIX={}", 
-                    Config.IGNORE_WEBHOOKS.get(), Config.FILTER_BY_PREFIX.get());
+                // Detailed webhook info logging
+                if (isWebhook) {
+                    long authorId = event.getMessageAuthor().getId();
+                    Viscord.LOGGER.info("  → Webhook details: author.id={}, chat={}, event={}", 
+                        authorId, ourWebhookId, eventWebhookId);
+                    Viscord.LOGGER.info("  → Config: IGNORE_WEBHOOKS={}, FILTER_BY_PREFIX={}", 
+                        Config.IGNORE_WEBHOOKS.get(), Config.FILTER_BY_PREFIX.get());
+                }
             }
 
             if (Config.IGNORE_BOTS.get() && isBot && !isWebhook) {
-                Viscord.LOGGER.info("  → FILTERED: Message from bot (ignoreBots=true)");
+                if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                    Viscord.LOGGER.info("  → FILTERED: Message from bot (ignoreBots=true)");
+                }
                 return;
             }
 
@@ -335,12 +398,16 @@ public class DiscordManager {
                 String authorId = String.valueOf(event.getMessageAuthor().getId());
                 
                 if (ourWebhookId != null && ourWebhookId.equals(authorId)) {
-                    Viscord.LOGGER.info("  → FILTERED: Message from our chat webhook (matched author.id: {})", authorId);
+                    if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                        Viscord.LOGGER.info("  → FILTERED: Message from our chat webhook (matched author.id: {})", authorId);
+                    }
                     return;
                 }
                 
                 if (eventWebhookId != null && eventWebhookId.equals(authorId)) {
-                    Viscord.LOGGER.info("  → FILTERED: Message from our event webhook (matched author.id: {})", authorId);
+                    if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                        Viscord.LOGGER.info("  → FILTERED: Message from our event webhook (matched author.id: {})", authorId);
+                    }
                     return;
                 }
             }
@@ -353,12 +420,16 @@ public class DiscordManager {
                     String ourPrefix = Config.SERVER_PREFIX.get();
                     
                     if (webhookName.contains(ourPrefix)) {
-                        Viscord.LOGGER.info("  → FILTERED: Other webhook by prefix match (username contains '{}')", ourPrefix);
+                        if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                            Viscord.LOGGER.info("  → FILTERED: Other webhook by prefix match (username contains '{}')", ourPrefix);
+                        }
                         return;
                     }
                 } else {
                     // Ignore all other webhooks
-                    Viscord.LOGGER.info("  → FILTERED: All other webhooks ignored (ignoreWebhooks=true, filterByPrefix=false)");
+                    if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                        Viscord.LOGGER.info("  → FILTERED: All other webhooks ignored (ignoreWebhooks=true, filterByPrefix=false)");
+                    }
                     return;
                 }
             }
@@ -367,7 +438,9 @@ public class DiscordManager {
             if (Config.SHOW_OTHER_SERVER_EVENTS.get() && isWebhook && !event.getMessage().getEmbeds().isEmpty()) {
                 String eventMessage = parseEventEmbed(event, authorName);
                 if (eventMessage != null) {
-                    Viscord.LOGGER.info("  → RELAYING EVENT to Minecraft: {}", eventMessage);
+                    if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                        Viscord.LOGGER.info("  → RELAYING EVENT to Minecraft: {}", eventMessage);
+                    }
                     if (server != null) {
                         Component component = Component.literal(eventMessage);
                         server.getPlayerList().getPlayers()
@@ -378,7 +451,9 @@ public class DiscordManager {
             }
 
             if (content.isEmpty()) {
-                Viscord.LOGGER.info("  → FILTERED: Empty message content");
+                if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                    Viscord.LOGGER.info("  → FILTERED: Empty message content");
+                }
                 return;
             }
 
@@ -386,7 +461,9 @@ public class DiscordManager {
                 .replace("{username}", authorName)
                 .replace("{message}", content);
             
-            Viscord.LOGGER.info("  → RELAYING to Minecraft: {}", formattedMessage);
+            if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                Viscord.LOGGER.info("Discord → Minecraft: {} said '{}' → {}", authorName, content, formattedMessage);
+            }
 
             if (server != null) {
                 Component component = toMinecraftComponentWithLinks(formattedMessage);
@@ -630,72 +707,55 @@ public class DiscordManager {
         });
     }
 
+    /**
+     * Get the player avatar URL from config with placeholder replacement
+     */
+    private String getPlayerAvatarUrl(String username) {
+        String avatarUrl = Config.WEBHOOK_AVATAR_URL.get();
+        if (avatarUrl == null || avatarUrl.isEmpty()) {
+            return null;
+        }
+        
+        if (server != null) {
+            ServerPlayer player = server.getPlayerList().getPlayerByName(username);
+            if (player != null) {
+                String uuid = player.getUUID().toString().replace("-", "");
+                return avatarUrl
+                    .replace("{uuid}", uuid)
+                    .replace("{username}", username);
+            }
+        }
+        
+        // Fallback: use username only
+        return avatarUrl.replace("{username}", username);
+    }
+
     public void sendJoinEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Player Joined");
-            embed.addProperty("description", "A player joined the server.");
-            embed.addProperty("color", 0x5865F2);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-
-            embed.add("fields", fields);
-
-            JsonObject thumbnail = new JsonObject();
-            thumbnail.addProperty("url", "https://mc-heads.net/head/" + username);
-            embed.add("thumbnail", thumbnail);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Join");
-            embed.add("footer", footer);
-        });
+        String thumbnailUrl = getPlayerAvatarUrl(username);
+        sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
+            "Player Joined",
+            "A player joined the server.",
+            0x5865F2,
+            username,
+            serverName == null ? "Unknown" : serverName,
+            "Viscord · Join",
+            thumbnailUrl
+        ));
     }
 
     public void sendLeaveEmbed(String username) {
         String serverName = Config.SERVER_NAME.get();
-        sendEventEmbed(embed -> {
-            embed.addProperty("title", "Player Left");
-            embed.addProperty("description", "A player left the server.");
-            embed.addProperty("color", 0x99AAB5);
-
-            JsonArray fields = new JsonArray();
-
-            JsonObject playerField = new JsonObject();
-            playerField.addProperty("name", "Player");
-            playerField.addProperty("value", username);
-            playerField.addProperty("inline", true);
-            fields.add(playerField);
-
-            JsonObject serverField = new JsonObject();
-            serverField.addProperty("name", "Server");
-            serverField.addProperty(
-                "value",
-                serverName == null ? "Unknown" : serverName
-            );
-            serverField.addProperty("inline", true);
-            fields.add(serverField);
-
-            embed.add("fields", fields);
-
-            JsonObject footer = new JsonObject();
-            footer.addProperty("text", "Viscord · Leave");
-            embed.add("footer", footer);
-        });
+        String thumbnailUrl = getPlayerAvatarUrl(username);
+        sendEventEmbed(EmbedFactory.createPlayerEventEmbed(
+            "Player Left",
+            "A player left the server.",
+            0x99AAB5,
+            username,
+            serverName == null ? "Unknown" : serverName,
+            "Viscord · Leave",
+            thumbnailUrl
+        ));
     }
 
     public void sendAdvancementEmbed(

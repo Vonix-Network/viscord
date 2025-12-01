@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import java.awt.Color;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +44,7 @@ public class DiscordManager {
     private String eventWebhookId = null; // Extracted from event webhook URL for precise filtering
     private DiscordApi discordApi = null; // Javacord API for bot status and commands
     private LinkedAccountsManager linkedAccountsManager = null; // Account linking system
+    private PlayerPreferences playerPreferences = null; // Per-player message filtering preferences
 
     // Simple Markdown-style link pattern: [text](https://url)
     private static final Pattern DISCORD_MARKDOWN_LINK = Pattern.compile("\\[([^\\]]+)]\\((https?://[^)]+)\\)");
@@ -80,6 +82,14 @@ public class DiscordManager {
 
         // Extract webhook ID from URL for precise filtering
         extractWebhookId();
+
+        // Initialize player preferences
+        try {
+            playerPreferences = new PlayerPreferences(server.getServerDirectory().toPath().resolve("config"));
+            Viscord.LOGGER.info("Player preferences system initialized");
+        } catch (Exception e) {
+            Viscord.LOGGER.error("Failed to initialize player preferences", e);
+        }
 
         running = true;
         startMessageQueueThread();
@@ -212,6 +222,27 @@ public class DiscordManager {
 
         Viscord.LOGGER
                 .info("Config reload complete! Note: Bot token, channel IDs, and some features require a full restart");
+    }
+
+    // ========= Player Preferences =========
+
+    /**
+     * Check if a player has server message filtering enabled.
+     */
+    public boolean hasServerMessagesFiltered(UUID playerUuid) {
+        if (playerPreferences == null) {
+            return false; // Default: show all messages
+        }
+        return playerPreferences.hasServerMessagesFiltered(playerUuid);
+    }
+
+    /**
+     * Set whether a player wants to filter server messages.
+     */
+    public void setServerMessagesFiltered(UUID playerUuid, boolean filtered) {
+        if (playerPreferences != null) {
+            playerPreferences.setServerMessagesFiltered(playerUuid, filtered);
+        }
     }
 
     /**

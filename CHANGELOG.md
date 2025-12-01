@@ -1,5 +1,34 @@
 # Viscord Changelog
 
+## Version 1.0.3 - 2025-11-30
+
+### ✨ New Features
+
+#### 🎛️ Per-Player Server Message Filtering
+- **New `/discord servermessages` command** - Individual players can now control whether they see messages from bots and webhooks (other servers)
+  - `/discord servermessages` - Check your current filter status
+  - `/discord servermessages enable` - Show ALL messages including bots/other servers (default)
+  - `/discord servermessages disable` - Only show messages from Discord users and your own server
+- **Pure player preference system** - No global config option, fully player-controlled
+- **Persistent storage** - Preferences saved to `config/viscord-player-preferences.json`
+- **Default behavior** - All players see everything by default (most inclusive)
+- **Smart filtering** - Only filters bot/webhook messages, never filters real Discord users
+- **Status**: ✅ Implemented in Forge 1.20.1 and Forge 1.21.1
+
+### 🐛 Bug Fixes
+- **Fixed duplicate advancement messages** - Advancements were sometimes sending twice with different emoji templates
+  - Removed duplicate `sendAdvancementEmbed()` call in event handler
+  - Standardized on trophy emoji (🏆) for all advancement types (Challenge/Goal/Task)
+  - Single consistent embed format for all advancement notifications
+  - **Affects**: All versions (Forge 1.20.1, Forge 1.21.1, NeoForge 1.21.1)
+
+### 📝 Version Compatibility
+- ✅ **Forge 1.20.1**: Full feature set implemented
+- ✅ **Forge 1.21.1**: Full feature set implemented
+- ✅ **NeoForge 1.21.1**: Full feature set implemented
+
+---
+
 ## Version 1.0.2 - 2025-11-22
 
 ### ✨ New Features

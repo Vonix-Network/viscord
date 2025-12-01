@@ -27,113 +27,140 @@ public class MinecraftEventHandler {
 
         // /discord command with subcommands
         dispatcher.register(
-            Commands.literal("discord")
-                .requires(source -> source.hasPermission(0))
-                .executes(context -> {
-                    String invite = Config.DISCORD_INVITE_URL.get();
-                    CommandSourceStack source = context.getSource();
+                Commands.literal("discord")
+                        .requires(source -> source.hasPermission(0))
+                        .executes(context -> {
+                            String invite = Config.DISCORD_INVITE_URL.get();
+                            CommandSourceStack source = context.getSource();
 
-                    if (invite == null || invite.isEmpty()) {
-                        source.sendSuccess(
-                            () -> Component.literal(
-                                "Discord invite URL is not configured. Ask an admin to set 'discordInviteUrl' in viscord-common.toml."
-                            ),
-                            false
-                        );
-                    } else {
-                        MutableComponent clickable = Component
-                            .literal("Click Here to join the Discord!")
-                            .withStyle(style ->
-                                style
-                                    .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, invite))
-                                    .withUnderlined(true)
-                                    .withColor(ChatFormatting.AQUA)
-                            );
+                            if (invite == null || invite.isEmpty()) {
+                                source.sendSuccess(
+                                        () -> Component.literal(
+                                                "Discord invite URL is not configured. Ask an admin to set 'discordInviteUrl' in viscord-common.toml."),
+                                        false);
+                            } else {
+                                MutableComponent clickable = Component
+                                        .literal("Click Here to join the Discord!")
+                                        .withStyle(style -> style
+                                                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, invite))
+                                                .withUnderlined(true)
+                                                .withColor(ChatFormatting.AQUA));
 
-                        source.sendSuccess(() -> clickable, false);
-                    }
-                    return 1;
-                })
-                .then(Commands.literal("link")
-                    .executes(context -> {
-                        if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
-                            context.getSource().sendFailure(Component.literal("§cAccount linking is disabled."));
-                            return 0;
-                        }
-                        
-                        ServerPlayer player = context.getSource().getPlayerOrException();
-                        String code = DiscordManager.getInstance().generateLinkCode(player);
-                        
-                        if (code != null) {
-                            context.getSource().sendSuccess(() -> Component.literal(
-                                "§aYour link code is: §e" + code + "\n" +
-                                "§7Use §b/link " + code + "§7 in Discord to link your account.\n" +
-                                "§7Code expires in " + (Config.LINK_CODE_EXPIRY_SECONDS.get() / 60) + " minutes."
-                            ), false);
+                                source.sendSuccess(() -> clickable, false);
+                            }
                             return 1;
-                        } else {
-                            context.getSource().sendFailure(Component.literal("§cFailed to generate link code."));
-                            return 0;
-                        }
-                    })
-                )
-                .then(Commands.literal("unlink")
-                    .executes(context -> {
-                        if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
-                            context.getSource().sendFailure(Component.literal("§cAccount linking is disabled."));
-                            return 0;
-                        }
-                        
-                        ServerPlayer player = context.getSource().getPlayerOrException();
-                        boolean success = DiscordManager.getInstance().unlinkAccount(player.getUUID());
-                        
-                        if (success) {
-                            context.getSource().sendSuccess(() -> Component.literal(
-                                "§aYour Discord account has been unlinked."
-                            ), false);
-                            return 1;
-                        } else {
-                            context.getSource().sendFailure(Component.literal("§cYou don't have a linked Discord account."));
-                            return 0;
-                        }
-                    })
-                )
-        );
-        
+                        })
+                        .then(Commands.literal("link")
+                                .executes(context -> {
+                                    if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
+                                        context.getSource()
+                                                .sendFailure(Component.literal("§cAccount linking is disabled."));
+                                        return 0;
+                                    }
+
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    String code = DiscordManager.getInstance().generateLinkCode(player);
+
+                                    if (code != null) {
+                                        context.getSource().sendSuccess(() -> Component.literal(
+                                                "§aYour link code is: §e" + code + "\n" +
+                                                        "§7Use §b/link " + code
+                                                        + "§7 in Discord to link your account.\n" +
+                                                        "§7Code expires in "
+                                                        + (Config.LINK_CODE_EXPIRY_SECONDS.get() / 60) + " minutes."),
+                                                false);
+                                        return 1;
+                                    } else {
+                                        context.getSource()
+                                                .sendFailure(Component.literal("§cFailed to generate link code."));
+                                        return 0;
+                                    }
+                                }))
+                        .then(Commands.literal("unlink")
+                                .executes(context -> {
+                                    if (!Config.ENABLE_ACCOUNT_LINKING.get()) {
+                                        context.getSource()
+                                                .sendFailure(Component.literal("§cAccount linking is disabled."));
+                                        return 0;
+                                    }
+
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    boolean success = DiscordManager.getInstance().unlinkAccount(player.getUUID());
+
+                                    if (success) {
+                                        context.getSource().sendSuccess(() -> Component.literal(
+                                                "§aYour Discord account has been unlinked."), false);
+                                        return 1;
+                                    } else {
+                                        context.getSource().sendFailure(
+                                                Component.literal("§cYou don't have a linked Discord account."));
+                                        return 0;
+                                    }
+                                }))
+                        .then(Commands.literal("servermessages")
+                                .then(Commands.literal("enable")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            DiscordManager.getInstance().setServerMessagesFiltered(player.getUUID(),
+                                                    false);
+                                            context.getSource().sendSuccess(() -> Component.literal(
+                                                    "§aServer messages enabled! You will now see messages from other servers and bots."),
+                                                    false);
+                                            return 1;
+                                        }))
+                                .then(Commands.literal("disable")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            DiscordManager.getInstance().setServerMessagesFiltered(player.getUUID(),
+                                                    true);
+                                            context.getSource().sendSuccess(() -> Component.literal(
+                                                    "§cServer messages disabled! You will only see messages from Discord users and your own server."),
+                                                    false);
+                                            return 1;
+                                        }))
+                                .executes(context -> {
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    boolean isFiltered = DiscordManager.getInstance()
+                                            .hasServerMessagesFiltered(player.getUUID());
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§7Server messages are currently: "
+                                                    + (isFiltered ? "§cDisabled" : "§aEnabled") + "\n" +
+                                                    "§7Use §b/discord servermessages enable§7 or §b/discord servermessages disable§7 to change."),
+                                            false);
+                                    return 1;
+                                })));
+
         // /viscord command for admin functions
         dispatcher.register(
-            Commands.literal("viscord")
-                .then(Commands.literal("help")
-                    .executes(context -> {
-                        context.getSource().sendSuccess(() -> Component.literal(
-                            "§6§l=== Viscord Commands ===\n" +
-                            "§b/discord§7 - Show Discord invite link\n" +
-                            "§b/discord link§7 - Generate account link code\n" +
-                            "§b/discord unlink§7 - Unlink your Discord account\n" +
-                            "§b/viscord help§7 - Show this help message\n" +
-                            "§b/viscord reload§7 - Reload config (requires op)\n" +
-                            "§7Discord: §b/list§7 - Show online players"
-                        ), false);
-                        return 1;
-                    })
-                )
-                .then(Commands.literal("reload")
-                    .requires(source -> source.hasPermission(2))
-                    .executes(context -> {
-                        context.getSource().sendSuccess(() -> Component.literal(
-                            "§eReloading Viscord configuration..."
-                        ), false);
-                        
-                        // Reload config (it auto-reloads from file on next access)
-                        DiscordManager.getInstance().reloadConfig();
-                        
-                        context.getSource().sendSuccess(() -> Component.literal(
-                            "§aViscord configuration reloaded! Restart may be required for some changes."
-                        ), false);
-                        return 1;
-                    })
-                )
-        );
+                Commands.literal("viscord")
+                        .then(Commands.literal("help")
+                                .executes(context -> {
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§6§l=== Viscord Commands ===\n" +
+                                                    "§b/discord§7 - Show Discord invite link\n" +
+                                                    "§b/discord link§7 - Generate account link code\n" +
+                                                    "§b/discord unlink§7 - Unlink your Discord account\n" +
+                                                    "§b/discord servermessages§7 - Toggle server messages on/off\n" +
+                                                    "§b/viscord help§7 - Show this help message\n" +
+                                                    "§b/viscord reload§7 - Reload config (requires op)\n" +
+                                                    "§7Discord: §b/list§7 - Show online players"),
+                                            false);
+                                    return 1;
+                                }))
+                        .then(Commands.literal("reload")
+                                .requires(source -> source.hasPermission(2))
+                                .executes(context -> {
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§eReloading Viscord configuration..."), false);
+
+                                    // Reload config (it auto-reloads from file on next access)
+                                    DiscordManager.getInstance().reloadConfig();
+
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§aViscord configuration reloaded! Restart may be required for some changes."),
+                                            false);
+                                    return 1;
+                                })));
     }
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
@@ -160,8 +187,7 @@ public class MinecraftEventHandler {
 
         if (!DiscordManager.getInstance().isRunning()) {
             Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping join message"
-            );
+                    "DiscordManager is not running, skipping join message");
             return;
         }
 
@@ -193,8 +219,7 @@ public class MinecraftEventHandler {
 
         if (!DiscordManager.getInstance().isRunning()) {
             Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping leave message"
-            );
+                    "DiscordManager is not running, skipping leave message");
             return;
         }
 
@@ -227,14 +252,12 @@ public class MinecraftEventHandler {
         }
 
         Viscord.LOGGER.info(
-            "PlayerDeath event triggered for: {}",
-            player.getName().getString()
-        );
+                "PlayerDeath event triggered for: {}",
+                player.getName().getString());
 
         if (!DiscordManager.getInstance().isRunning()) {
             Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping death message"
-            );
+                    "DiscordManager is not running, skipping death message");
             return;
         }
 
@@ -244,9 +267,9 @@ public class MinecraftEventHandler {
         }
 
         String deathMessage = event
-            .getSource()
-            .getLocalizedDeathMessage(player)
-            .getString();
+                .getSource()
+                .getLocalizedDeathMessage(player)
+                .getString();
 
         Viscord.LOGGER.info("Sending death message: {}", deathMessage);
 
@@ -260,20 +283,17 @@ public class MinecraftEventHandler {
 
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onAdvancement(
-        AdvancementEvent.AdvancementEarnEvent event
-    ) {
+            AdvancementEvent.AdvancementEarnEvent event) {
         ServerPlayer player = (ServerPlayer) event.getEntity();
         AdvancementHolder advancement = event.getAdvancement();
 
         Viscord.LOGGER.info(
-            "Advancement event triggered for: {}",
-            player.getName().getString()
-        );
+                "Advancement event triggered for: {}",
+                player.getName().getString());
 
         if (!DiscordManager.getInstance().isRunning()) {
             Viscord.LOGGER.warn(
-                "DiscordManager is not running, skipping advancement message"
-            );
+                    "DiscordManager is not running, skipping advancement message");
             return;
         }
 
@@ -291,8 +311,7 @@ public class MinecraftEventHandler {
         var display = advancement.value().display().get();
         if (!display.shouldAnnounceChat()) {
             Viscord.LOGGER.debug(
-                "Advancement should not be announced in chat, skipping"
-            );
+                    "Advancement should not be announced in chat, skipping");
             return;
         }
 
@@ -301,25 +320,22 @@ public class MinecraftEventHandler {
         String advancementDescription = display.getDescription().getString();
 
         Viscord.LOGGER.info(
-            "Sending advancement message for: {} - {}",
-            username,
-            advancementTitle
-        );
+                "Sending advancement message for: {} - {}",
+                username,
+                advancementTitle);
 
         if (Config.ENABLE_DEBUG_LOGGING.get()) {
             Viscord.LOGGER.debug(
-                "Player advancement: {} - {}",
-                username,
-                advancementTitle
-            );
+                    "Player advancement: {} - {}",
+                    username,
+                    advancementTitle);
         }
 
         DiscordManager.getInstance().sendAdvancementEmbed(
-            username,
-            advancementTitle,
-            advancementDescription,
-            display.getType().name()
-        );
+                username,
+                advancementTitle,
+                advancementDescription,
+                display.getType().name());
 
         Viscord.LOGGER.info("Advancement message sent successfully");
     }

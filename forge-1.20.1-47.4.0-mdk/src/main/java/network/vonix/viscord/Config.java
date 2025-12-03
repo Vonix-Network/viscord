@@ -246,8 +246,8 @@ public class Config {
     public static final ForgeConfigSpec.BooleanValue IGNORE_BOTS =
         BUILDER.comment(
             "Ignore messages from Discord bots",
-            "Recommended: true (prevents loops with other bots)"
-        ).define("ignoreBots", true);
+            "Recommended: false (loop prevention handled by webhook ID filtering)"
+        ).define("ignoreBots", false);
 
     public static final ForgeConfigSpec.BooleanValue IGNORE_WEBHOOKS =
         BUILDER.comment(

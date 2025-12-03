@@ -22,6 +22,13 @@
   - Single consistent embed format for all advancement notifications
   - **Affects**: All versions (Forge 1.20.1, Forge 1.21.1, NeoForge 1.21.1)
 
+### ⚙️ Configuration Changes
+- **Changed `ignoreBots` default from `true` to `false`**
+  - Loop prevention is now handled by webhook ID filtering in code
+  - No need to blanket ignore all bot messages
+  - Users can still manually enable if needed for specific use cases
+  - **Affects**: All versions (Forge 1.20.1, Forge 1.21.1, NeoForge 1.21.1)
+
 ### 📝 Version Compatibility
 - ✅ **Forge 1.20.1**: Full feature set implemented
 - ✅ **Forge 1.21.1**: Full feature set implemented

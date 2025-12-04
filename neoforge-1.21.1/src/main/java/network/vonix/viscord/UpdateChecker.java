@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class UpdateChecker {
     
     private static final String GITHUB_API_URL = "https://api.github.com/repos/Vonix-Network/Viscord/releases/latest";
-    private static final String CURRENT_VERSION = "1.0.2";
+    private static final String CURRENT_VERSION = "1.0.3";
     private static final Gson GSON = new Gson();
     
     private static String latestVersion = null;

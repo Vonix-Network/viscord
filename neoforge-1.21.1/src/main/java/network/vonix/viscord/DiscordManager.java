@@ -241,6 +241,25 @@ public class DiscordManager {
     }
 
     /**
+     * Check if a player has event filtering enabled (achievements, join/leave).
+     */
+    public boolean hasEventsFiltered(UUID playerUuid) {
+        if (playerPreferences == null) {
+            return false; // Default: show all events
+        }
+        return playerPreferences.hasEventsFiltered(playerUuid);
+    }
+
+    /**
+     * Set whether a player wants to filter event messages (achievements, join/leave).
+     */
+    public void setEventsFiltered(UUID playerUuid, boolean filtered) {
+        if (playerPreferences != null) {
+            playerPreferences.setEventsFiltered(playerUuid, filtered);
+        }
+    }
+
+    /**
      * Extract webhook IDs from config or webhook URLs.
      * Priority: 1) Manual config, 2) Auto-extract from URL
      * Webhook URL format: https://discord.com/api/webhooks/{id}/{token}
@@ -474,8 +493,18 @@ public class DiscordManager {
                     }
                     if (server != null) {
                         Component component = Component.literal(eventMessage);
-                        server.getPlayerList().getPlayers()
-                                .forEach(player -> player.sendSystemMessage(component));
+                        // Send to each player based on their event preferences
+                        server.getPlayerList().getPlayers().forEach(player -> {
+                            // Check if player has events filtered
+                            if (hasEventsFiltered(player.getUUID())) {
+                                if (Config.ENABLE_DEBUG_LOGGING.get()) {
+                                    Viscord.LOGGER.debug("Filtered event message for player: {}",
+                                            player.getName().getString());
+                                }
+                                return; // Skip this player
+                            }
+                            player.sendSystemMessage(component);
+                        });
                     }
                     return; // Event was processed, don't process as regular message
                 }

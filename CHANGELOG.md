@@ -1,19 +1,24 @@
 # Viscord Changelog
 
-## Version 1.0.3 - 2025-11-30
+## Version 1.0.3 - 2025-12-03
 
 ### ✨ New Features
 
-#### 🎛️ Per-Player Server Message Filtering
-- **New `/discord servermessages` command** - Individual players can now control whether they see messages from bots and webhooks (other servers)
-  - `/discord servermessages` - Check your current filter status
-  - `/discord servermessages enable` - Show ALL messages including bots/other servers (default)
-  - `/discord servermessages disable` - Only show messages from Discord users and your own server
+#### 🎛️ Per-Player Message Filtering System
+- **Reorganized `/viscord messages` command** - Individual players can now control whether they see messages from bots and webhooks (other servers)
+  - `/viscord messages` - Check your current filter status
+  - `/viscord messages enable` - Show ALL messages including bots/other servers (default)
+  - `/viscord messages disable` - Only show messages from Discord users and your own server
+- **New `/viscord events` command** - Control event messages (achievements, join/leave)
+  - `/viscord events` - Check your current event filter status
+  - `/viscord events enable` - Show achievements and join/leave messages (default)
+  - `/viscord events disable` - Hide achievements and join/leave messages
 - **Pure player preference system** - No global config option, fully player-controlled
 - **Persistent storage** - Preferences saved to `config/viscord-player-preferences.json`
 - **Default behavior** - All players see everything by default (most inclusive)
-- **Smart filtering** - Only filters bot/webhook messages, never filters real Discord users
-- **Status**: ✅ Implemented in Forge 1.20.1 and Forge 1.21.1
+- **Smart filtering** - Only filters bot/webhook messages and events, never filters real Discord users
+- **Command restructuring** - Moved filtering commands from `/discord` to `/viscord` for better organization
+- **Status**: ✅ Implemented in NeoForge 1.21.1, Forge 1.21.1, and Forge 1.20.1
 
 ### 🐛 Bug Fixes
 - **Fixed duplicate advancement messages** - Advancements were sometimes sending twice with different emoji templates

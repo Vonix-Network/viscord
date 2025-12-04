@@ -96,8 +96,41 @@ public class MinecraftEventHandler {
                                                 Component.literal("§cYou don't have a linked Discord account."));
                                         return 0;
                                     }
+                                })));
+
+        // /viscord command for admin functions
+        dispatcher.register(
+                Commands.literal("viscord")
+                        .then(Commands.literal("help")
+                                .executes(context -> {
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§6§l=== Viscord Commands ===\n" +
+                                                    "§b/discord§7 - Show Discord invite link\n" +
+                                                    "§b/discord link§7 - Generate account link code\n" +
+                                                    "§b/discord unlink§7 - Unlink your Discord account\n" +
+                                                    "§b/viscord messages§7 - Toggle server messages on/off\n" +
+                                                    "§b/viscord events§7 - Toggle event messages on/off\n" +
+                                                    "§b/viscord help§7 - Show this help message\n" +
+                                                    "§b/viscord reload§7 - Reload config (requires op)\n" +
+                                                    "§7Discord: §b/list§7 - Show online players"),
+                                            false);
+                                    return 1;
                                 }))
-                        .then(Commands.literal("servermessages")
+                        .then(Commands.literal("reload")
+                                .requires(source -> source.hasPermission(2))
+                                .executes(context -> {
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§eReloading Viscord configuration..."), false);
+
+                                    // Reload config (it auto-reloads from file on next access)
+                                    DiscordManager.getInstance().reloadConfig();
+
+                                    context.getSource().sendSuccess(() -> Component.literal(
+                                            "§aViscord configuration reloaded! Restart may be required for some changes."),
+                                            false);
+                                    return 1;
+                                }))
+                        .then(Commands.literal("messages")
                                 .then(Commands.literal("enable")
                                         .executes(context -> {
                                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -125,39 +158,36 @@ public class MinecraftEventHandler {
                                     context.getSource().sendSuccess(() -> Component.literal(
                                             "§7Server messages are currently: "
                                                     + (isFiltered ? "§cDisabled" : "§aEnabled") + "\n" +
-                                                    "§7Use §b/discord servermessages enable§7 or §b/discord servermessages disable§7 to change."),
-                                            false);
-                                    return 1;
-                                })));
-
-        // /viscord command for admin functions
-        dispatcher.register(
-                Commands.literal("viscord")
-                        .then(Commands.literal("help")
-                                .executes(context -> {
-                                    context.getSource().sendSuccess(() -> Component.literal(
-                                            "§6§l=== Viscord Commands ===\n" +
-                                                    "§b/discord§7 - Show Discord invite link\n" +
-                                                    "§b/discord link§7 - Generate account link code\n" +
-                                                    "§b/discord unlink§7 - Unlink your Discord account\n" +
-                                                    "§b/discord servermessages§7 - Toggle server messages on/off\n" +
-                                                    "§b/viscord help§7 - Show this help message\n" +
-                                                    "§b/viscord reload§7 - Reload config (requires op)\n" +
-                                                    "§7Discord: §b/list§7 - Show online players"),
+                                                    "§7Use §b/viscord messages enable§7 or §b/viscord messages disable§7 to change."),
                                             false);
                                     return 1;
                                 }))
-                        .then(Commands.literal("reload")
-                                .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("events")
+                                .then(Commands.literal("enable")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            DiscordManager.getInstance().setEventsFiltered(player.getUUID(), false);
+                                            context.getSource().sendSuccess(() -> Component.literal(
+                                                    "§aEvent messages enabled! You will now see achievements and join/leave messages."),
+                                                    false);
+                                            return 1;
+                                        }))
+                                .then(Commands.literal("disable")
+                                        .executes(context -> {
+                                            ServerPlayer player = context.getSource().getPlayerOrException();
+                                            DiscordManager.getInstance().setEventsFiltered(player.getUUID(), true);
+                                            context.getSource().sendSuccess(() -> Component.literal(
+                                                    "§cEvent messages disabled! You will no longer see achievements and join/leave messages."),
+                                                    false);
+                                            return 1;
+                                        }))
                                 .executes(context -> {
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    boolean isFiltered = DiscordManager.getInstance().hasEventsFiltered(player.getUUID());
                                     context.getSource().sendSuccess(() -> Component.literal(
-                                            "§eReloading Viscord configuration..."), false);
-
-                                    // Reload config (it auto-reloads from file on next access)
-                                    DiscordManager.getInstance().reloadConfig();
-
-                                    context.getSource().sendSuccess(() -> Component.literal(
-                                            "§aViscord configuration reloaded! Restart may be required for some changes."),
+                                            "§7Event messages are currently: "
+                                                    + (isFiltered ? "§cDisabled" : "§aEnabled") + "\n" +
+                                                    "§7Use §b/viscord events enable§7 or §b/viscord events disable§7 to change."),
                                             false);
                                     return 1;
                                 })));

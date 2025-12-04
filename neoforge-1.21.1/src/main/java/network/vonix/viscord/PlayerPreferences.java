@@ -48,6 +48,28 @@ public class PlayerPreferences {
     }
 
     /**
+     * Check if a player has event message filtering enabled.
+     * Returns false by default (show all events).
+     */
+    public boolean hasEventsFiltered(UUID playerUuid) {
+        PlayerPreference pref = preferences.get(playerUuid);
+        if (pref != null) {
+            return pref.filterEvents;
+        }
+        // Default: false (show all events)
+        return false;
+    }
+
+    /**
+     * Set whether a player wants to filter event messages (achievements, join/leave).
+     */
+    public void setEventsFiltered(UUID playerUuid, boolean filtered) {
+        PlayerPreference pref = preferences.computeIfAbsent(playerUuid, k -> new PlayerPreference());
+        pref.filterEvents = filtered;
+        savePreferences();
+    }
+
+    /**
      * Load preferences from file.
      */
     private void loadPreferences() throws IOException {
@@ -71,6 +93,9 @@ public class PlayerPreferences {
 
                         if (prefObj.has("filterServerMessages")) {
                             pref.filterServerMessages = prefObj.get("filterServerMessages").getAsBoolean();
+                        }
+                        if (prefObj.has("filterEvents")) {
+                            pref.filterEvents = prefObj.get("filterEvents").getAsBoolean();
                         }
 
                         preferences.put(uuid, pref);
@@ -97,6 +122,7 @@ public class PlayerPreferences {
             for (Map.Entry<UUID, PlayerPreference> entry : preferences.entrySet()) {
                 JsonObject prefObj = new JsonObject();
                 prefObj.addProperty("filterServerMessages", entry.getValue().filterServerMessages);
+                prefObj.addProperty("filterEvents", entry.getValue().filterEvents);
                 playersObj.add(entry.getKey().toString(), prefObj);
             }
 
@@ -118,5 +144,6 @@ public class PlayerPreferences {
      */
     private static class PlayerPreference {
         boolean filterServerMessages = false; // Default to showing all messages
+        boolean filterEvents = false; // Default to showing all events (achievements, join/leave)
     }
 }

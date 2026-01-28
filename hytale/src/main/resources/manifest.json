@@ -1,0 +1,9 @@
+{
+    "Group": "network.vonix",
+    "Name": "Viscord",
+    "Version": "1.0.0",
+    "Description": "Discord integration for Hytale servers",
+    "Main": "network.vonix.viscord.Viscord",
+    "DisabledByDefault": false,
+    "IncludesAssetPack": false
+}

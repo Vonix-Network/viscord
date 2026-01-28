@@ -1,0 +1,115 @@
+plugins {
+	id 'fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenCentral()
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"viscord" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+dependencies {
+	// To change the versions see the gradle.properties file
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+	// Fabric API. This is technically optional, but you probably want it anyway.
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	
+	// Platform-provided dependencies - use compileOnly
+	compileOnly 'com.google.code.gson:gson:2.10.1' // Provided by Minecraft
+	compileOnly 'org.slf4j:slf4j-api:2.0.7' // Provided by Minecraft
+	
+	// Javacord for Discord Bot API (bot status, slash commands)
+	implementation 'org.javacord:javacord:3.8.0'
+	include 'org.javacord:javacord-api:3.8.0'
+	include 'org.javacord:javacord-core:3.8.0'
+	
+	// Javacord transitive dependencies
+	include 'io.vavr:vavr:0.10.4'
+	include 'io.vavr:vavr-match:0.10.4'
+	include 'com.codahale:xsalsa20poly1305:0.11.0'
+	include 'com.fasterxml.jackson.core:jackson-databind:2.17.0'
+	include 'com.fasterxml.jackson.core:jackson-core:2.17.0'
+	include 'com.fasterxml.jackson.core:jackson-annotations:2.17.0'
+	include 'com.neovisionaries:nv-websocket-client:2.14'
+	
+	// OkHttp3 for webhooks (faster than Javacord webhooks)
+	implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+	include 'com.squareup.okhttp3:okhttp:4.12.0'
+	include 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+	include 'com.squareup.okio:okio:3.9.0'
+	include 'com.squareup.okio:okio-jvm:3.9.0'
+	
+	// Kotlin stdlib required by OkHttp 4.x
+	include 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
+	include 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22'
+	include 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.22'
+	include 'org.jetbrains.kotlin:kotlin-stdlib-common:1.9.22'
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 17
+}
+
+java {
+	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+	// if it is present.
+	// If you remove this line, sources will not be generated.
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}"}
+	}
+}
+
+// configure the maven publication
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	repositories {
+		// Add repositories to publish to here.
+		// Notice: This block does NOT have the same function as the block in the top level.
+		// The repositories here will be used for publishing your artifact, not for
+		// retrieving dependencies.
+	}
+}

@@ -1,0 +1,35 @@
+{
+	"schemaVersion": 1,
+	"id": "viscord",
+	"version": "${version}",
+	"name": "Viscord",
+	"description": "Bidirectional Minecraft-Discord Chat Integration. Custom webhook username formatting, multi-server support, player join/leave/death/advancement notifications, and real-time chat relay.",
+	"authors": [
+		"Vonix Network"
+	],
+	"contact": {
+		"homepage": "https://github.com/Vonix-Network/Viscord",
+		"sources": "https://github.com/Vonix-Network/Viscord",
+		"issues": "https://github.com/Vonix-Network/Viscord/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/viscord/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"network.vonix.viscord.Viscord"
+		],
+		"client": [
+			"network.vonix.viscord.ViscordClient"
+		]
+	},
+	"mixins": [
+		"viscord.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}

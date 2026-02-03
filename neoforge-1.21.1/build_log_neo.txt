@@ -1,0 +1,48 @@
+Reusing configuration cache.
+> Task :processTestResources NO-SOURCE
+> Task :generateModMetadata UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :jarJar UP-TO-DATE
+> Task :createMinecraftArtifacts UP-TO-DATE
+
+> Task :compileJava
+C:\Users\ACER\Work\viscord\neoforge-1.21.1\src\main\java\network\vonix\viscord\discord\DiscordManager.java:121: error: cannot find symbol
+            playerPreferences = new PlayerPreferences(server.getServerDirectory().toPath().resolve("config"));
+                                                                                 ^
+  symbol:   method toPath()
+  location: interface Path
+C:\Users\ACER\Work\viscord\neoforge-1.21.1\src\main\java\network\vonix\viscord\discord\DiscordManager.java:489: error: cannot find symbol
+                            server.getServerDirectory().toPath().resolve("config"));
+                                                       ^
+  symbol:   method toPath()
+  location: interface Path
+C:\Users\ACER\Work\viscord\neoforge-1.21.1\src\main\java\network\vonix\viscord\discord\DiscordManager.java:497: error: cannot find symbol
+                            server != null ? server.getServerDirectory().toPath().resolve("config") : "unknown",
+                                                                        ^
+  symbol:   method toPath()
+  location: interface Path
+3 errors
+
+> Task :compileJava FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/ACER/Work/viscord/neoforge-1.21.1/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  C:\Users\ACER\Work\viscord\neoforge-1.21.1\src\main\java\network\vonix\viscord\discord\DiscordManager.java:121: error: cannot find symbol
+              playerPreferences = new PlayerPreferences(server.getServerDirectory().toPath().resolve("config"));
+                                                                                   ^
+    symbol:   method toPath()
+    location: interface Path
+  3 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to generate a Build Scan (powered by Develocity).
+
+BUILD FAILED in 4s
+5 actionable tasks: 1 executed, 4 up-to-date
+Configuration cache entry reused.

@@ -16,6 +16,7 @@ import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import network.vonix.viscord.discord.DiscordManager;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = Viscord.MODID)
@@ -183,7 +184,8 @@ public class MinecraftEventHandler {
                                         }))
                                 .executes(context -> {
                                     ServerPlayer player = context.getSource().getPlayerOrException();
-                                    boolean isFiltered = DiscordManager.getInstance().hasEventsFiltered(player.getUUID());
+                                    boolean isFiltered = DiscordManager.getInstance()
+                                            .hasEventsFiltered(player.getUUID());
                                     context.getSource().sendSuccess(() -> Component.literal(
                                             "§7Event messages are currently: "
                                                     + (isFiltered ? "§cDisabled" : "§aEnabled") + "\n" +

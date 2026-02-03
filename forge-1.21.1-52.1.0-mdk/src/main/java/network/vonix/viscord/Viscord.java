@@ -11,11 +11,13 @@ import net.minecraftforge.fml.config.ModConfig;
 import org.slf4j.Logger;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import network.vonix.viscord.discord.DiscordManager;
 
 /**
  * Viscord - Bidirectional Minecraft-Discord Chat Integration
  *
- * A Forge mod that enables bidirectional communication between Minecraft and Discord.
+ * A Forge mod that enables bidirectional communication between Minecraft and
+ * Discord.
  * Features:
  * - Custom webhook username formatting with server prefixes
  * - Multi-server support through a single Discord channel
@@ -33,15 +35,15 @@ public class Viscord {
         // Register ourselves for server and other game events
         MinecraftForge.EVENT_BUS.register(this);
 
-        // MinecraftEventHandler is automatically registered via @Mod.EventBusSubscriber annotation
+        // MinecraftEventHandler is automatically registered via @Mod.EventBusSubscriber
+        // annotation
         // No need to manually register it here
 
         // Register our mod's config so that FML can create and load the config file
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "viscord-common.toml");
 
         LOGGER.info(
-            "Viscord initialized - Bidirectional Discord chat mod loaded"
-        );
+                "Viscord initialized - Bidirectional Discord chat mod loaded");
     }
 
     @SubscribeEvent
@@ -54,8 +56,7 @@ public class Viscord {
             // Initialize Discord manager with the server instance
             DiscordManager.getInstance().initialize(event.getServer());
             LOGGER.info(
-                "Discord integration initialization requested (async). Discord will connect in the background."
-            );
+                    "Discord integration initialization requested (async). Discord will connect in the background.");
             LOGGER.info("Server: {}", Config.SERVER_NAME.get());
             LOGGER.info("Prefix: {}", Config.SERVER_PREFIX.get());
             LOGGER.info("Channel ID: {}", Config.DISCORD_CHANNEL_ID.get());
@@ -71,7 +72,8 @@ public class Viscord {
         LOGGER.info("Server stopping - shutting down Discord integration");
 
         try {
-            // Send shutdown message to Discord before disconnecting (non-blocking with timeout)
+            // Send shutdown message to Discord before disconnecting (non-blocking with
+            // timeout)
             if (DiscordManager.getInstance().isRunning()) {
                 String serverName = Config.SERVER_NAME.get();
 

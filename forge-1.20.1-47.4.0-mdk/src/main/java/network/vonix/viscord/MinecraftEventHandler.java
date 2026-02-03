@@ -1,6 +1,7 @@
 package network.vonix.viscord;
 
 import com.mojang.brigadier.CommandDispatcher;
+import network.vonix.viscord.discord.DiscordManager;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -183,7 +184,8 @@ public class MinecraftEventHandler {
                                         }))
                                 .executes(context -> {
                                     ServerPlayer player = context.getSource().getPlayerOrException();
-                                    boolean isFiltered = DiscordManager.getInstance().hasEventsFiltered(player.getUUID());
+                                    boolean isFiltered = DiscordManager.getInstance()
+                                            .hasEventsFiltered(player.getUUID());
                                     context.getSource().sendSuccess(() -> Component.literal(
                                             "§7Event messages are currently: "
                                                     + (isFiltered ? "§cDisabled" : "§aEnabled") + "\n" +

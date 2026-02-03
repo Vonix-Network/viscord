@@ -8,13 +8,13 @@ import com.google.gson.JsonObject;
  * Reduces duplication in embed creation code.
  */
 public class EmbedFactory {
-    
+
     /**
      * Create a simple event embed with title, description, and color
      */
     public static java.util.function.Consumer<JsonObject> createSimpleEmbed(
-            String title, 
-            String description, 
+            String title,
+            String description,
             int color,
             String footerText) {
         return embed -> {
@@ -24,7 +24,7 @@ public class EmbedFactory {
             addFooter(embed, footerText);
         };
     }
-    
+
     /**
      * Create a player event embed (join/leave) with player and server fields
      */
@@ -40,22 +40,22 @@ public class EmbedFactory {
             embed.addProperty("title", title);
             embed.addProperty("description", description);
             embed.addProperty("color", color);
-            
+
             JsonArray fields = new JsonArray();
             addField(fields, "Player", playerName, true);
             addField(fields, "Server", serverName, true);
             embed.add("fields", fields);
-            
+
             if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
                 JsonObject thumbnail = new JsonObject();
                 thumbnail.addProperty("url", thumbnailUrl);
                 embed.add("thumbnail", thumbnail);
             }
-            
+
             addFooter(embed, footerText);
         };
     }
-    
+
     /**
      * Create an advancement embed with player, title, and description fields
      */
@@ -69,19 +69,19 @@ public class EmbedFactory {
             embed.addProperty("title", emoji + " Advancement Made");
             embed.addProperty("description", "A player has completed an advancement.");
             embed.addProperty("color", color);
-            
+
             JsonArray fields = new JsonArray();
             addField(fields, "Player", playerName, true);
             addField(fields, "Title", advancementTitle, true);
-            addField(fields, "Description", 
-                advancementDescription == null || advancementDescription.isBlank() ? "—" : advancementDescription, 
-                false);
+            addField(fields, "Description",
+                    advancementDescription == null || advancementDescription.isBlank() ? "—" : advancementDescription,
+                    false);
             embed.add("fields", fields);
-            
+
             addFooter(embed, "Viscord · Advancement");
         };
     }
-    
+
     /**
      * Create a server status embed (startup/shutdown)
      */
@@ -95,17 +95,17 @@ public class EmbedFactory {
             embed.addProperty("title", title);
             embed.addProperty("description", description);
             embed.addProperty("color", color);
-            
+
             JsonArray fields = new JsonArray();
             addField(fields, "Server", serverName == null ? "Unknown" : serverName, true);
             embed.add("fields", fields);
-            
+
             addFooter(embed, footerText);
         };
     }
-    
+
     // Helper methods
-    
+
     private static void addField(JsonArray fields, String name, String value, boolean inline) {
         JsonObject field = new JsonObject();
         field.addProperty("name", name);
@@ -113,7 +113,7 @@ public class EmbedFactory {
         field.addProperty("inline", inline);
         fields.add(field);
     }
-    
+
     private static void addFooter(JsonObject embed, String text) {
         JsonObject footer = new JsonObject();
         footer.addProperty("text", text);

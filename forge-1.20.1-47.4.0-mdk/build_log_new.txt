@@ -1,0 +1,35 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/C:/Users/ACER/.gradle/wrapper/dists/gradle-8.8-bin/dl7vupf4psengwqhwktix4v1/gradle-8.8/lib/native-platform-0.22-milestone-26.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.8/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :
+Java: 25.0.1, JVM: 25.0.1+8-LTS-27 (Oracle Corporation), Arch: amd64
+
+> Task :compileJava
+C:\Users\ACER\Work\viscord\forge-1.20.1-47.4.0-mdk\src\main\java\network\vonix\viscord\MinecraftEventHandler.java:382: error: updateBotStatus() has private access in DiscordManager
+                    DiscordManager.getInstance().updateBotStatus();
+                                                ^
+C:\Users\ACER\Work\viscord\forge-1.20.1-47.4.0-mdk\src\main\java\network\vonix\viscord\Viscord.java:44: warning: [removal] get() in ModLoadingContext has been deprecated and marked for removal
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "viscord-common.toml");
+                         ^
+1 error
+1 warning
+
+> Task :compileJava FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler error output for details.
+
+* Try:
+> Run with --info option to get more log output.
+> Run with --scan to get full insights.
+
+BUILD FAILED in 26s
+1 actionable task: 1 executed

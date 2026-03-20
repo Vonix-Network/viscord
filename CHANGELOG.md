@@ -1,5 +1,104 @@
 # Viscord Changelog
 
+## Version 2.0.0 - 2026-03-19
+
+### 🎯 Major Refactor - Complete Rewrite
+
+Viscord 2.0 represents a complete architectural rewrite from the ground up, porting all Discord functionality from VonixCore into a standalone, optimized, multi-loader mod.
+
+### ✨ New Architecture
+
+#### **Multi-Loader Support (Architectury)**
+- **Fabric** support added (1.18.2, 1.19.2, 1.20.1, 1.21.1)
+- **Forge** support maintained (1.18.2, 1.19.2, 1.20.1)
+- **NeoForge** support maintained (1.21.1)
+- Unified codebase using Architectury API for cross-platform compatibility
+
+#### **Optimized Core Systems**
+- **Non-blocking async operations** throughout - no main thread blocking
+- **CachedThreadPool executor** for Discord operations
+- **Timeout protection** on Discord initialization (10 seconds max)
+- **Proper lifecycle management** with graceful shutdown
+
+### 🔧 New Configuration System
+
+#### **JSON-Based Config** (`config/viscord.json`)
+Replaced Forge config with simple JSON configuration for easier public use:
+```json
+{
+  "enabled": true,
+  "bot_token": "YOUR_BOT_TOKEN_HERE",
+  "channel_id": "YOUR_CHANNEL_ID_HERE",
+  "webhook_url": "https://discord.com/api/webhooks/...",
+  "server_prefix": "[MC]",
+  "server_name": "Minecraft Server",
+  "avatar_url": "https://minotar.net/armor/bust/{uuid}/100.png",
+  "offline_mode_avatar_fix": true,
+  "offline_avatar_url": "https://minotar.net/armor/bust/{username}/100.png"
+}
+```
+
+#### **New Config Options**
+- `offline_mode_avatar_fix` - Detects offline/cracked servers and uses username-based avatars
+- `offline_avatar_url` - Configurable username-based avatar service URL
+- `message_queue_size` - Maximum queued messages (default: 100)
+- `rate_limit_delay` - Webhook rate limiting (default: 1000ms)
+
+### 🎮 New Features
+
+#### **Offline Mode Avatar Support**
+- **Automatic detection** of offline/cracked servers via UUID version checking
+- **Fallback to username-based avatars** (Minotar) when offline mode detected
+- **Type 3 UUID detection** (name-based MD5 hashes vs Type 4 random Mojang UUIDs)
+- Fixes profile pictures not working on cracked/offline servers
+
+#### **Fluxer Integration**
+- **Full Fluxer support** for cross-server communication
+- `FluxerIntegration` class with hooks for:
+  - `onCrossServerMessage()` - Forward cross-server chat to Discord
+  - `onCrossServerJoin()` - Notify Discord of cross-server joins
+  - `onCrossServerLeave()` - Notify Discord of cross-server leaves
+  - `getServerId()` - Server identification for multi-server setups
+
+### 📦 Dependencies
+
+Updated all dependencies to latest stable versions:
+- **Javacord** 3.8.0 (Discord Bot API)
+- **OkHttp** 4.12.0 (HTTP client for webhooks)
+- **Gson** 2.10.1 (JSON serialization)
+
+### 🔒 Security & Stability
+
+- **Graceful error handling** throughout Discord operations
+- **Connection timeouts** prevent server startup hangs
+- **Proper resource cleanup** on shutdown (executor, HTTP client, bot connection)
+- **No Kotlin dependency** - pure Java implementation for broader compatibility
+
+### 🐛 Bug Fixes from Original
+
+- **Embed format 1:1 match** with original VonixCore implementation
+- **Footer text consistency** - "VonixCore · Advancement" preserved
+- **Advancement embed structure** matches original exactly
+
+### 📝 Version Compatibility
+- ✅ **Fabric 1.21.1**: Full feature set
+- ✅ **Fabric 1.20.1**: Full feature set
+- ✅ **Fabric 1.19.2**: Full feature set
+- ✅ **Fabric 1.18.2**: Full feature set
+- ✅ **NeoForge 1.21.1**: Full feature set
+- ✅ **Forge 1.20.1**: Full feature set
+- ✅ **Forge 1.19.2**: Full feature set
+- ✅ **Forge 1.18.2**: Full feature set
+
+### 🔄 Migration Notes
+
+**From Viscord 1.x:**
+- Config location changed: `config/viscord.json` (was Forge config)
+- Commands reorganized under `/viscord` namespace
+- No data migration needed - fresh install recommended
+
+---
+
 ## Version 1.0.3 - 2025-12-03
 
 ### ✨ New Features

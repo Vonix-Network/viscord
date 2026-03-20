@@ -1,0 +1,35 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+#issueTrackerURL = ""
+license = "MIT"
+
+[[mods]]
+modId = "viscord"
+version = "${version}"
+displayName = "Viscord"
+authors = "Vonix"
+description = '''
+Discord Multi-Server Integration for Minecraft - Optimized for multiple servers with embed parsing and anti-loop for webhooks
+'''
+#logoFile = ""
+
+[[dependencies.viscord]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.viscord]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.viscord]]
+modId = "architectury"
+mandatory = true
+versionRange = "[9.2.14,)"
+ordering = "AFTER"
+side = "BOTH"

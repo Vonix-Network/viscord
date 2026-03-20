@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "viscord",
+  "version": "${version}",
+  "name": "Viscord",
+  "description": "Discord Multi-Server Integration for Minecraft - Optimized for multiple servers with embed parsing and anti-loop for webhooks",
+  "authors": [
+    "Vonix"
+  ],
+  "contact": {
+    "homepage": "https://github.com/vonix-network/viscord",
+    "sources": "https://github.com/vonix-network/viscord"
+  },
+  "license": "MIT",
+  "icon": "assets/viscord/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "server": [
+      "network.vonix.viscord.fabric.ViscordFabric"
+    ]
+  },
+  "mixins": [
+    "viscord.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.18.2",
+    "java": ">=17",
+    "architectury": ">=4.12.94",
+    "fabric": "*"
+  },
+  "suggests": {
+    "fluxer": "*"
+  }
+}
